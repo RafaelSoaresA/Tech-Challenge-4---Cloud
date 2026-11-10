@@ -1,0 +1,80 @@
+<?xml version="1.0"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>br.com.techchallenge</groupId>
+  <artifactId>feedback-aulas</artifactId>
+  <version>1.0.0-SNAPSHOT</version>
+  <packaging>pom</packaging>
+  <name>Feedback de aulas (Tech Challenge Fase 4)</name>
+
+  <!-- Cada módulo é uma Lambda Quarkus independente (gera target/function.zip). -->
+  <modules>
+    <module>receber-avaliacao</module>
+    <module>notificar-critica</module>
+    <module>relatorio-semanal</module>
+  </modules>
+
+  <properties>
+    <maven.compiler.release>21</maven.compiler.release>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <!-- IMPORTANTE: use a MESMA versão do Quarkus que o resto da equipe já usa. -->
+    <quarkus.platform.version>3.33.2.1</quarkus.platform.version>
+    <compiler-plugin.version>3.14.0</compiler-plugin.version>
+    <surefire-plugin.version>3.5.3</surefire-plugin.version>
+  </properties>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>io.quarkus.platform</groupId>
+        <artifactId>quarkus-bom</artifactId>
+        <version>${quarkus.platform.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <!-- Extensões Quarkiverse para DynamoDB, SNS e S3, com versões alinhadas à plataforma -->
+      <dependency>
+        <groupId>io.quarkus.platform</groupId>
+        <artifactId>quarkus-amazon-services-bom</artifactId>
+        <version>${quarkus.platform.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+  <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>io.quarkus.platform</groupId>
+          <artifactId>quarkus-maven-plugin</artifactId>
+          <version>${quarkus.platform.version}</version>
+          <extensions>true</extensions>
+          <executions>
+            <execution>
+              <goals>
+                <goal>build</goal>
+                <goal>generate-code</goal>
+                <goal>generate-code-tests</goal>
+              </goals>
+            </execution>
+          </executions>
+        </plugin>
+        <plugin>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <version>${compiler-plugin.version}</version>
+          <configuration>
+            <parameters>true</parameters>
+          </configuration>
+        </plugin>
+        <plugin>
+          <artifactId>maven-surefire-plugin</artifactId>
+          <version>${surefire-plugin.version}</version>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
+</project>

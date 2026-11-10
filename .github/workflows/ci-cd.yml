@@ -1,0 +1,90 @@
+name: CI/CD
+
+on:
+  pull_request:
+    branches: [main]      # PR: só compila e testa (não toca na AWS)
+  push:
+    branches: [main]      # merge na main: testa + deploy + smoke test
+  workflow_dispatch: {}   # botão "Run workflow" manual
+
+permissions:
+  id-token: write         # necessário para login na AWS via OIDC (sem chaves fixas)
+  contents: read
+
+env:
+  AWS_REGION: us-east-1
+  STACK_NAME: feedback-aulas-dev
+
+jobs:
+  testes:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+      - name: Compilar e rodar testes (gera target/function.zip de cada Lambda)
+        run: mvn -B verify
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Validar template (cfn-lint)
+        run: pip install cfn-lint && cfn-lint template.yaml
+
+  deploy:
+    needs: testes
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    concurrency: deploy-dev   # evita dois deploys ao mesmo tempo
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+      - uses: aws-actions/setup-sam@v2
+        with:
+          use-installer: true
+      - name: Login na AWS (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Empacotar as Lambdas (testes já rodaram no job anterior)
+        run: mvn -B package -DskipTests
+
+      # Não usa "sam build": o template já aponta para os function.zip gerados pelo Maven.
+      - name: sam deploy
+        run: |
+          sam deploy \
+            --template-file template.yaml \
+            --stack-name "$STACK_NAME" \
+            --region "$AWS_REGION" \
+            --capabilities CAPABILITY_IAM \
+            --resolve-s3 \
+            --no-confirm-changeset \
+            --no-fail-on-empty-changeset \
+            --parameter-overrides "Stage=dev AdminEmail=${{ secrets.ADMIN_EMAIL }}"
+
+      - name: Smoke test pós-deploy
+        run: |
+          API_URL=$(aws cloudformation describe-stacks --stack-name "$STACK_NAME" \
+            --query "Stacks[0].Outputs[?OutputKey=='ApiUrl'].OutputValue" --output text)
+          echo "API: $API_URL"
+
+          # Java tem cold start de alguns segundos na 1ª chamada: tempo maior + retentativa
+          STATUS=$(curl -s --max-time 40 --retry 2 --retry-all-errors -o resp.json -w "%{http_code}" \
+            -X POST "$API_URL/avaliacao" -H "Content-Type: application/json" \
+            -d '{"descricao":"smoke test CI","nota":9}')
+          cat resp.json; echo
+          test "$STATUS" = "201" || { echo "Esperado 201, recebido $STATUS"; exit 1; }
+
+          STATUS=$(curl -s --max-time 40 -o /dev/null -w "%{http_code}" \
+            -X POST "$API_URL/avaliacao" -H "Content-Type: application/json" \
+            -d '{"descricao":"x","nota":42}')
+          test "$STATUS" = "400" || { echo "Validação falhou: esperado 400, recebido $STATUS"; exit 1; }
+          echo "Smoke test OK"

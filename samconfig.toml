@@ -1,0 +1,17 @@
+version = 0.1
+
+[default.global.parameters]
+stack_name = "feedback-aulas-dev"
+
+[default.build.parameters]
+cached = true
+
+[default.deploy.parameters]
+region = "us-east-1"
+capabilities = "CAPABILITY_IAM"
+resolve_s3 = true
+confirm_changeset = true
+parameter_overrides = "Stage=dev AdminEmail=SEU_EMAIL@exemplo.com"
+
+[default.validate.parameters]
+lint = true

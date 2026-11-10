@@ -1,0 +1,76 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >
+  Bootstrap (rodar UMA vez pelo console do CloudFormation). Cria a confiança entre o
+  GitHub Actions e a AWS via OIDC, e a role que o pipeline usa para fazer deploy.
+  Assim NÃO é preciso guardar access keys da AWS no GitHub.
+
+Parameters:
+  GitHubOwner:
+    Type: String
+    Description: Usuário ou organização dono do repositório (ex. rafaelsoares)
+  GitHubRepo:
+    Type: String
+    Description: Nome do repositório (ex. tech-challenge-fase4)
+
+Resources:
+  GitHubOidcProvider:
+    Type: AWS::IAM::OIDCProvider
+    Properties:
+      Url: https://token.actions.githubusercontent.com
+      ClientIdList: [sts.amazonaws.com]
+      ThumbprintList: [6938fd4d98bab03faadb97b34396831e3780aea1]
+
+  GitHubDeployRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: github-actions-deploy-feedback
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Federated: !Ref GitHubOidcProvider
+            Action: sts:AssumeRoleWithWebIdentity
+            Condition:
+              StringEquals:
+                token.actions.githubusercontent.com:aud: sts.amazonaws.com
+              StringLike:
+                # Só a branch main deste repositório pode assumir a role
+                token.actions.githubusercontent.com:sub: !Sub "repo:${GitHubOwner}/${GitHubRepo}:ref:refs/heads/main"
+      Policies:
+        - PolicyName: deploy-serverless
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Sid: ServicosDaAplicacao
+                Effect: Allow
+                Action:
+                  - cloudformation:*
+                  - lambda:*
+                  - apigateway:*
+                  - dynamodb:*
+                  - sns:*
+                  - s3:*
+                  - scheduler:*
+                  - logs:*
+                Resource: "*"
+              - Sid: RolesDasLambdas
+                Effect: Allow
+                Action:
+                  - iam:GetRole
+                  - iam:CreateRole
+                  - iam:DeleteRole
+                  - iam:TagRole
+                  - iam:UntagRole
+                  - iam:PassRole
+                  - iam:AttachRolePolicy
+                  - iam:DetachRolePolicy
+                  - iam:PutRolePolicy
+                  - iam:DeleteRolePolicy
+                  - iam:GetRolePolicy
+                Resource: !Sub "arn:aws:iam::${AWS::AccountId}:role/feedback-aulas-*"
+
+Outputs:
+  RoleArn:
+    Description: Copie este valor para o secret AWS_DEPLOY_ROLE_ARN no GitHub
+    Value: !GetAtt GitHubDeployRole.Arn

@@ -1,0 +1,182 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: Tech Challenge Fase 4 - Plataforma de feedbacks de aulas, Java/Quarkus (US10/US11)
+
+# ---------------------------------------------------------------------------
+# Parâmetros: valores que mudam por ambiente. São passados no deploy
+# (samconfig.toml ou --parameter-overrides no GitHub Actions).
+# ---------------------------------------------------------------------------
+Parameters:
+  Stage:
+    Type: String
+    Default: dev
+    AllowedValues: [dev, prod]
+  AdminEmail:
+    Type: String
+    Description: E-mail que recebe os alertas críticos (precisa confirmar a assinatura do SNS)
+  LimiteNotaCritica:
+    Type: Number
+    Default: 4
+    Description: Nota igual ou abaixo deste valor é considerada crítica (alinhar com Dev 2 / US04)
+
+# ---------------------------------------------------------------------------
+# Globals: configurações herdadas por TODAS as Lambdas.
+# Java precisa de mais memória que Python para iniciar rápido (512 MB é um bom
+# equilíbrio entre custo e cold start). arm64 é mais barato que x86.
+#
+# O Quarkus usa SEMPRE o mesmo handler genérico; ele descobre qual classe
+# executar pelo QUARKUS_LAMBDA_HANDLER (ou, na Lambda HTTP, pelas rotas JAX-RS).
+# ---------------------------------------------------------------------------
+Globals:
+  Function:
+    Runtime: java21
+    Architectures: [arm64]
+    MemorySize: 512
+    Timeout: 30
+    Handler: io.quarkus.amazon.lambda.runtime.QuarkusStreamHandler::handleRequest
+    Environment:
+      Variables:
+        STAGE: !Ref Stage
+        TABELA_AVALIACOES: !Ref TabelaAvaliacoes
+        LIMITE_NOTA_CRITICA: !Ref LimiteNotaCritica
+        JAVA_TOOL_OPTIONS: "-XX:+TieredCompilation -XX:TieredStopAtLevel=1"   # menor cold start
+
+Resources:
+  # ------------------------------- DynamoDB -------------------------------
+  TabelaAvaliacoes:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "avaliacoes-${Stage}"
+      BillingMode: PAY_PER_REQUEST          # paga por requisição: centavos no volume do projeto
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      StreamSpecification:
+        StreamViewType: NEW_IMAGE           # "evento de avaliação registrada" (US03) consumido pela Lambda de alerta
+
+  # --------------------------------- SNS ----------------------------------
+  TopicoAlertas:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub "alertas-criticos-${Stage}"
+
+  AssinaturaEmailAdmin:
+    Type: AWS::SNS::Subscription
+    Properties:
+      TopicArn: !Ref TopicoAlertas
+      Protocol: email
+      Endpoint: !Ref AdminEmail
+
+  # ---------------------------------- S3 ----------------------------------
+  BucketRelatorios:
+    Type: AWS::S3::Bucket
+    Properties:
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      LifecycleConfiguration:
+        Rules:
+          - Id: ApagarRelatoriosAntigos
+            Status: Enabled
+            ExpirationInDays: 90
+
+  # ------------------------- Lambda 1: receber avaliação -------------------------
+  # CodeUri aponta para o zip gerado pelo "mvn package" no módulo do Dev 1.
+  # Cria também o API Gateway (HTTP API) automaticamente via evento HttpApi.
+  ReceberAvaliacaoFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "receber-avaliacao-${Stage}"
+      CodeUri: receber-avaliacao/target/function.zip
+      Policies:
+        - DynamoDBWritePolicy:
+            TableName: !Ref TabelaAvaliacoes
+      Events:
+        PostAvaliacao:
+          Type: HttpApi
+          Properties:
+            Path: /avaliacao                # sem "ç": evite acentos em URLs
+            Method: POST
+
+  # ------------------------- Lambda 2: alerta crítico -------------------------
+  NotificarCriticaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "notificar-critica-${Stage}"
+      CodeUri: notificar-critica/target/function.zip
+      Environment:
+        Variables:
+          QUARKUS_LAMBDA_HANDLER: notificar-critica      # = @Named("notificar-critica")
+          TOPICO_ALERTAS_ARN: !Ref TopicoAlertas
+      Policies:
+        - SNSPublishMessagePolicy:
+            TopicName: !GetAtt TopicoAlertas.TopicName
+      Events:
+        NovasAvaliacoes:
+          Type: DynamoDB
+          Properties:
+            Stream: !GetAtt TabelaAvaliacoes.StreamArn
+            StartingPosition: LATEST
+            BatchSize: 10
+            MaximumRetryAttempts: 2
+            BisectBatchOnFunctionError: true
+            FilterCriteria:                 # só chama a Lambda para inserções (economiza invocações)
+              Filters:
+                - Pattern: '{"eventName": ["INSERT"]}'
+
+  # ------------------------- Lambda 3: relatório semanal -------------------------
+  RelatorioSemanalFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "relatorio-semanal-${Stage}"
+      CodeUri: relatorio-semanal/target/function.zip
+      Timeout: 60
+      Environment:
+        Variables:
+          QUARKUS_LAMBDA_HANDLER: relatorio-semanal      # = @Named("relatorio-semanal")
+          BUCKET_RELATORIOS: !Ref BucketRelatorios
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref TabelaAvaliacoes
+        - S3WritePolicy:
+            BucketName: !Ref BucketRelatorios
+      Events:
+        TodaSegunda:
+          Type: ScheduleV2                  # EventBridge Scheduler
+          Properties:
+            ScheduleExpression: "cron(0 8 ? * MON *)"
+            ScheduleExpressionTimezone: America/Sao_Paulo
+            Input: "{}"
+
+  # --------------- Logs com retenção curta (evita custo acumulado) ---------------
+  LogsReceber:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${ReceberAvaliacaoFunction}"
+      RetentionInDays: 7
+  LogsNotificar:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${NotificarCriticaFunction}"
+      RetentionInDays: 7
+  LogsRelatorio:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${RelatorioSemanalFunction}"
+      RetentionInDays: 7
+
+Outputs:
+  ApiUrl:
+    Description: URL base da API (use no Postman)
+    Value: !Sub "https://${ServerlessHttpApi}.execute-api.${AWS::Region}.amazonaws.com"
+  TabelaAvaliacoes:
+    Value: !Ref TabelaAvaliacoes
+  TopicoAlertasArn:
+    Value: !Ref TopicoAlertas
+  BucketRelatorios:
+    Value: !Ref BucketRelatorios
