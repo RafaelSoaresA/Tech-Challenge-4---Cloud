@@ -8,7 +8,7 @@ Fluxo: `DynamoDB Stream (INSERT)` → `notificar-critica` → `SNS` → e-mail d
 
 | Requisito | Implementação |
 | --- | --- |
-| US04 — classificar urgência | `nota <= LIMITE_NOTA_CRITICA` (padrão `4`) ⇒ `CRITICA`; acima ⇒ `NORMAL` |
+| US04 — classificar urgência | mesma escala do `relatorio-semanal`: `nota <= LIMITE_NOTA_CRITICA` (padrão `4`) ⇒ `HIGH`; `nota < 7` ⇒ `MEDIUM`; acima ⇒ `LOW` |
 | US05 — Lambda independente | `NotificarCriticaHandler`, disparado pelo stream, com retry de lote em caso de falha |
 | US06 — alerta ao administrador | Publicação no tópico SNS com descrição, nota, urgência e data de envio |
 
@@ -48,12 +48,14 @@ Destinatário: definido no `template.yaml` pelo parâmetro `AdminEmail`, assinad
 
 Mensagem publicada:
 
+Só `HIGH` gera alerta; `MEDIUM` e `LOW` são registrados no log e ignorados.
+
 ```text
-Avaliação CRÍTICA recebida
+Avaliação com urgência HIGH recebida
 
 Descrição: <descricao>
 Nota: <nota>
-Urgência: CRITICA
+Urgência: HIGH
 Data da avaliação: <data>
 Data de envio do alerta: <ISO 8601 UTC>
 ID da avaliação: <id>

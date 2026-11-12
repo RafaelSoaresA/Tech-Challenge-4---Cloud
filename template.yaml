@@ -139,8 +139,9 @@ Resources:
       Timeout: 60
       Environment:
         Variables:
-          QUARKUS_LAMBDA_HANDLER: relatorio-semanal      # = @Named("relatorio-semanal")
-          BUCKET_RELATORIOS: !Ref BucketRelatorios
+          QUARKUS_LAMBDA_HANDLER: weekly-report          # = @Named("weekly-report")
+          EVALUATIONS_TABLE: !Ref TabelaAvaliacoes
+          REPORTS_BUCKET: !Ref BucketRelatorios
       Policies:
         - DynamoDBReadPolicy:
             TableName: !Ref TabelaAvaliacoes

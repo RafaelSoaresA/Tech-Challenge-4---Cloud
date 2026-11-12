@@ -27,7 +27,7 @@ class SnsPublicadorAlertaTest {
 
         publicador.publicar(
                 new AvaliacaoEvento("a1", "Aula confusa", 2, "2026-11-09T12:00:00Z"),
-                Urgencia.CRITICA,
+                Urgencia.HIGH,
                 Instant.parse("2026-11-09T12:05:00Z"));
 
         ArgumentCaptor<PublishRequest> captor = ArgumentCaptor.forClass(PublishRequest.class);
@@ -36,9 +36,9 @@ class SnsPublicadorAlertaTest {
 
         assertEquals("arn:aws:sns:us-east-1:123456789012:alertas-dev", requisicao.topicArn());
         assertTrue(requisicao.message().contains("Aula confusa"));
-        assertTrue(requisicao.message().contains("Urgência: CRITICA"));
+        assertTrue(requisicao.message().contains("Urgência: HIGH"));
         assertTrue(requisicao.message().contains("Data de envio do alerta: 2026-11-09T12:05:00Z"));
-        assertEquals("CRITICA", requisicao.messageAttributes().get("urgencia").stringValue());
+        assertEquals("HIGH", requisicao.messageAttributes().get("urgencia").stringValue());
         assertEquals("a1", requisicao.messageAttributes().get("avaliacaoId").stringValue());
     }
 
@@ -48,7 +48,7 @@ class SnsPublicadorAlertaTest {
 
         assertThrows(IllegalStateException.class, () -> publicador.publicar(
                 new AvaliacaoEvento("a1", "Aula confusa", 2, null),
-                Urgencia.CRITICA,
+                Urgencia.HIGH,
                 Instant.now()));
     }
 }
