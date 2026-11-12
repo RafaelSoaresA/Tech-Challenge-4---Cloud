@@ -5,12 +5,10 @@ public enum Urgency {
     MEDIUM,
     HIGH;
 
-    public static Urgency classify(Integer evaluation) {
-        return switch (evaluation) {
-            case null -> throw new IllegalArgumentException("Evaluation must not be null");
-            case Integer ev when ev < 5 -> HIGH;
-            case Integer ev when ev < 7 -> MEDIUM;
-            default -> LOW;
-        };
+    public static Urgency classify(double evaluation) {
+        if (evaluation <= 4) {
+            return HIGH;
+        }
+        return evaluation < 7 ? MEDIUM : LOW;
     }
 }

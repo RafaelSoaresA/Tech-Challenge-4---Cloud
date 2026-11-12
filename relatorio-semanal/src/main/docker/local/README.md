@@ -72,7 +72,7 @@ Use `awslocal` dentro do container, sem instalar AWS CLI no host:
 ```powershell
 docker compose --env-file .env-local -f src/main/docker/local/compose.yaml exec localstack awslocal dynamodb list-tables
 docker compose --env-file .env-local -f src/main/docker/local/compose.yaml exec localstack awslocal s3 ls
-docker compose --env-file .env-local -f src/main/docker/local/compose.yaml exec localstack awslocal dynamodb put-item --table-name evaluations-local --item '{"id":{"S":"8c7619b1-f338-443b-98c6-26c78618cc40"},"descricao":{"S":"Feedback local"},"nota":{"N":"8"},"data":{"S":"2026-11-03T12:00:00.00000Z"}}'
+docker compose --env-file .env-local -f src/main/docker/local/compose.yaml exec localstack awslocal dynamodb put-item --table-name evaluations-local --item '{"id":{"S":"8c7619b1-f338-443b-98c6-26c78618cc40"},"descricao":{"S":"Feedback local"},"nota":{"N":"8"},"dataEnvio":{"S":"2026-11-03T12:00:00.00000Z"}}'
 docker compose --env-file .env-local -f src/main/docker/local/compose.yaml exec localstack awslocal dynamodb scan --table-name evaluations-local
 ```
 
