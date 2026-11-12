@@ -53,7 +53,7 @@ public class SnsPublicadorAlerta implements PublicadorAlerta {
 
     static String montarMensagem(AvaliacaoEvento avaliacao, Urgencia urgencia, Instant enviadoEm) {
         return """
-                Avaliação CRÍTICA recebida
+                Avaliação com urgência %s recebida
 
                 Descrição: %s
                 Nota: %s
@@ -62,6 +62,7 @@ public class SnsPublicadorAlerta implements PublicadorAlerta {
                 Data de envio do alerta: %s
                 ID da avaliação: %s
                 """.formatted(
+                urgencia.name(),
                 valorOuPadrao(avaliacao.descricao()),
                 formatarNota(avaliacao.nota()),
                 urgencia.name(),
