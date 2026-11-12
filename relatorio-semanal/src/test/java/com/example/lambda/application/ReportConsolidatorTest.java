@@ -21,7 +21,7 @@ class ReportConsolidatorTest {
     @Test
     void calculatesTotalAndFractionalAverage() {
         var evaluations = List.of(
-                evaluation(4, "2026-01-01T12:00:00Z"),
+                evaluation(4.5, "2026-01-01T12:00:00Z"),
                 evaluation(7, "2026-01-01T13:00:00Z")
         );
 
@@ -31,7 +31,7 @@ class ReportConsolidatorTest {
                 () -> assertEquals(START, report.getPeriodStart()),
                 () -> assertEquals(END, report.getPeriodEnd()),
                 () -> assertEquals(2, report.getTotalEvaluations()),
-                () -> assertEquals(5.5, report.getAverageEvaluations(), 0.000001)
+                () -> assertEquals(5.75, report.getAverageEvaluations(), 0.000001)
         );
     }
 
@@ -85,7 +85,7 @@ class ReportConsolidatorTest {
         );
     }
 
-    private Evaluation evaluation(int score, String date) {
+    private Evaluation evaluation(double score, String date) {
         return new Evaluation(UUID.randomUUID(), "Feedback", score, Instant.parse(date));
     }
 }

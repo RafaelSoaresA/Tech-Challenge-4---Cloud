@@ -6,10 +6,10 @@ import java.util.UUID;
 public class Evaluation {
     private final UUID id;
     private final String description;
-    private final Integer evaluation;
+    private final double evaluation;
     private final Instant createdDate;
 
-    public Evaluation(UUID id, String description, Integer evaluation, Instant createdDate) {
+    public Evaluation(UUID id, String description, double evaluation, Instant createdDate) {
         this.id = id;
         this.description = description;
         this.evaluation = evaluation;
@@ -18,6 +18,6 @@ public class Evaluation {
 
     public UUID getId() { return id; }
     public String getDescription() { return description; }
-    public Integer getEvaluation() { return evaluation; }
+    public double getEvaluation() { return evaluation; }
     public Instant getCreatedDate() { return createdDate; }
 }
