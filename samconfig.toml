@@ -11,7 +11,7 @@ region = "us-east-1"
 capabilities = "CAPABILITY_IAM"
 resolve_s3 = true
 confirm_changeset = true
-parameter_overrides = "Stage=dev AdminEmail=SEU_EMAIL@exemplo.com"
+parameter_overrides = "Stage=dev AdminEmail=fiap.tech.challenge.4.2026@gmail.com"
 
 [default.validate.parameters]
 lint = true

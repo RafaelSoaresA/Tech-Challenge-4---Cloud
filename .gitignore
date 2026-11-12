@@ -1,5 +1,6 @@
 target/
 .aws-sam/
+.mvn/
 .idea/
 *.iml
 .vscode/
