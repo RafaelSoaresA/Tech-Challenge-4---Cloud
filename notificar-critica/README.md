@@ -56,8 +56,8 @@ Avaliação com urgência HIGH recebida
 Descrição: <descricao>
 Nota: <nota>
 Urgência: HIGH
-Data da avaliação: <data>
-Data de envio do alerta: <ISO 8601 UTC>
+Data da avaliação: 09/11/2026 09:00:00
+Data de envio do alerta: 09/11/2026 09:05:00
 ID da avaliação: <id>
 ```
 
