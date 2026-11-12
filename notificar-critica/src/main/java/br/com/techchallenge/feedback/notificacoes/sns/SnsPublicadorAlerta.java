@@ -10,6 +10,10 @@ import software.amazon.awssdk.services.sns.model.MessageAttributeValue;
 import software.amazon.awssdk.services.sns.model.PublishRequest;
 
 import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.Map;
 
 /**
@@ -18,6 +22,10 @@ import java.util.Map;
  */
 @ApplicationScoped
 public class SnsPublicadorAlerta implements PublicadorAlerta {
+
+    private static final ZoneId FUSO_BRASILIA = ZoneId.of("America/Sao_Paulo");
+    private static final DateTimeFormatter FORMATO_DATA_HORA =
+            DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss").withZone(FUSO_BRASILIA);
 
     private final SnsClient snsClient;
     private final String topicoArn;
@@ -66,8 +74,8 @@ public class SnsPublicadorAlerta implements PublicadorAlerta {
                 valorOuPadrao(avaliacao.descricao()),
                 formatarNota(avaliacao.nota()),
                 urgencia.name(),
-                valorOuPadrao(avaliacao.dataAvaliacao()),
-                enviadoEm,
+                formatarDataHora(avaliacao.dataAvaliacao()),
+                formatarDataHora(enviadoEm),
                 valorOuPadrao(avaliacao.id()));
     }
 
@@ -84,5 +92,25 @@ public class SnsPublicadorAlerta implements PublicadorAlerta {
 
     private static String formatarNota(double nota) {
         return nota == Math.rint(nota) ? String.valueOf((long) nota) : String.valueOf(nota);
+    }
+
+    private static String formatarDataHora(Instant instante) {
+        return instante == null ? "não informado" : FORMATO_DATA_HORA.format(instante);
+    }
+
+    /** Aceita ISO 8601 com ou sem offset; formato desconhecido volta como veio. */
+    private static String formatarDataHora(String iso) {
+        if (iso == null || iso.isBlank()) {
+            return "não informado";
+        }
+        try {
+            return FORMATO_DATA_HORA.format(OffsetDateTime.parse(iso));
+        } catch (DateTimeParseException ignorada) {
+            try {
+                return FORMATO_DATA_HORA.format(Instant.parse(iso));
+            } catch (DateTimeParseException tambemIgnorada) {
+                return iso;
+            }
+        }
     }
 }
