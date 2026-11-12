@@ -13,6 +13,7 @@ Parameters:
     AllowedValues: [dev, prod]
   AdminEmail:
     Type: String
+    Default: fiap.tech.challenge.4.2026@gmail.com
     Description: E-mail que recebe os alertas críticos (precisa confirmar a assinatura do SNS)
   LimiteNotaCritica:
     Type: Number
