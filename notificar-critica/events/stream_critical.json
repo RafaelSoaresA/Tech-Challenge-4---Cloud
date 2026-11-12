@@ -1,0 +1,46 @@
+{
+  "Records": [
+    {
+      "eventID": "exemplo-critica-1",
+      "eventName": "INSERT",
+      "eventSource": "aws:dynamodb",
+      "awsRegion": "us-east-1",
+      "dynamodb": {
+        "ApproximateCreationDateTime": 1762699200,
+        "Keys": {
+          "id": { "S": "7e9f1c2a-0000-0000-0000-000000000001" }
+        },
+        "NewImage": {
+          "id": { "S": "7e9f1c2a-0000-0000-0000-000000000001" },
+          "descricao": { "S": "Nao consegui acompanhar a aula de hoje" },
+          "nota": { "N": "2" },
+          "dataEnvio": { "S": "2026-11-09T12:00:00+00:00" }
+        },
+        "SequenceNumber": "100000000000000000001",
+        "SizeBytes": 120,
+        "StreamViewType": "NEW_IMAGE"
+      }
+    },
+    {
+      "eventID": "exemplo-normal-1",
+      "eventName": "INSERT",
+      "eventSource": "aws:dynamodb",
+      "awsRegion": "us-east-1",
+      "dynamodb": {
+        "ApproximateCreationDateTime": 1762699260,
+        "Keys": {
+          "id": { "S": "7e9f1c2a-0000-0000-0000-000000000002" }
+        },
+        "NewImage": {
+          "id": { "S": "7e9f1c2a-0000-0000-0000-000000000002" },
+          "descricao": { "S": "Aula excelente, professor muito claro" },
+          "nota": { "N": "9" },
+          "dataEnvio": { "S": "2026-11-09T12:01:00+00:00" }
+        },
+        "SequenceNumber": "100000000000000000002",
+        "SizeBytes": 120,
+        "StreamViewType": "NEW_IMAGE"
+      }
+    }
+  ]
+}
