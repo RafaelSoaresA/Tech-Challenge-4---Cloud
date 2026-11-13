@@ -26,7 +26,7 @@ public class ReportConsolidator {
 
     private Double calculateAverage(List<Evaluation> evaluations) {
         var average = evaluations.stream()
-                .mapToInt(Evaluation::getEvaluation)
+                .mapToDouble(Evaluation::getEvaluation)
                 .average();
         return average.isPresent() ? average.getAsDouble() : null;
     }

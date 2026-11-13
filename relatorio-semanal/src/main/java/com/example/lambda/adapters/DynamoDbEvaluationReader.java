@@ -42,13 +42,13 @@ public class DynamoDbEvaluationReader implements EvaluationReader {
             scannedItems += page.items().size();
             int selectedBeforePage = evaluations.size();
             for(var item : page.items()){
-                Instant date = Instant.parse(item.get("data").s());
+                Instant date = Instant.parse(item.get("dataEnvio").s());
 
                 if(!date.isBefore(startPeriod) && date.isBefore(endPeriod)){
                     evaluations.add(new Evaluation(
                             UUID.fromString(item.get("id").s()),
                             item.get("descricao").s(),
-                            Integer.valueOf(item.get("nota").n()),
+                            Double.parseDouble(item.get("nota").n()),
                             date
                             ));
                 }
