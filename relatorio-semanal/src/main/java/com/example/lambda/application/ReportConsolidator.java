@@ -20,7 +20,8 @@ public class ReportConsolidator {
                 evaluations.size(),
                 calculateAverage(evaluations),
                 groupByDay(evaluations),
-                groupByUrgency(evaluations)
+                groupByUrgency(evaluations),
+                evaluations
         );
     }
 
