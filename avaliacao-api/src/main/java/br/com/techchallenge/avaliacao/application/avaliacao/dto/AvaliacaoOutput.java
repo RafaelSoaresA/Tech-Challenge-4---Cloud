@@ -8,7 +8,7 @@ public class AvaliacaoOutput {
     private UUID id;
     private String descricao;
     private Integer nota;
-    private Instant data;
+    private Instant dataEnvio;
 
     private AvaliacaoOutput(Builder builder) {
 
@@ -16,7 +16,7 @@ public class AvaliacaoOutput {
         this.id = builder.id;
         this.descricao = builder.descricao;
         this.nota = builder.nota;
-        this.data = builder.data;
+        this.dataEnvio = builder.dataEnvio;
     }
 
     public static Builder builder() {
@@ -28,7 +28,7 @@ public class AvaliacaoOutput {
         private UUID id;
         private String descricao;
         private Integer nota;
-        private Instant data;
+        private Instant dataEnvio;
 
         public Builder id(UUID id){
             this.id = id;
@@ -45,8 +45,8 @@ public class AvaliacaoOutput {
             return this;
         }
 
-        public Builder data(Instant data){
-            this.data = data;
+        public Builder dataEnvio(Instant dataEnvio){
+            this.dataEnvio = dataEnvio;
             return this;
         }
 
@@ -68,7 +68,7 @@ public class AvaliacaoOutput {
         return nota;
     }
 
-    public Instant getData() {
-        return data;
+    public Instant getDataEnvio() {
+        return dataEnvio;
     }
 }
