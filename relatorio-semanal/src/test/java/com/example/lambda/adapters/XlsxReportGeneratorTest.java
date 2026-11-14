@@ -4,6 +4,8 @@ import com.example.lambda.domain.TotalEvaluationInDay;
 import com.example.lambda.domain.TotalEvaluationUrgency;
 import com.example.lambda.domain.Urgency;
 import com.example.lambda.domain.WeeklyReport;
+import com.example.lambda.domain.Evaluation;
+import com.example.lambda.application.ReportConsolidator;
 import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.DateUtil;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -13,11 +15,41 @@ import java.io.ByteArrayInputStream;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class XlsxReportGeneratorTest {
     private final XlsxReportGenerator generator = new XlsxReportGenerator();
+
+    @Test
+    void includesAllPeriodEvaluationsWithTypedColumnsInChronologicalOrder() throws Exception {
+        var evaluations = List.of(
+                new Evaluation(UUID.randomUUID(), "Descrição com acentos", 7.5,
+                        Instant.parse("2026-11-02T13:30:45Z")),
+                new Evaluation(UUID.randomUUID(), "=Texto do usuário", 4,
+                        Instant.parse("2026-11-02T01:00:00Z")));
+        var report = new ReportConsolidator().execute(evaluations,
+                Instant.parse("2026-11-01T03:00:00Z"), Instant.parse("2026-11-08T03:00:00Z"));
+
+        try (var workbook = new XSSFWorkbook(new ByteArrayInputStream(generator.generate(report)))) {
+            var sheet = workbook.getSheet("Avaliações Do Período");
+            assertEquals(3, sheet.getPhysicalNumberOfRows());
+            assertEquals("Data de Envio", sheet.getRow(0).getCell(0).getStringCellValue());
+            assertEquals("Descrição", sheet.getRow(0).getCell(1).getStringCellValue());
+            assertEquals("Nota", sheet.getRow(0).getCell(2).getStringCellValue());
+            assertTrue(DateUtil.isCellDateFormatted(sheet.getRow(1).getCell(0)));
+            assertEquals(java.time.LocalDateTime.of(2026, 11, 1, 22, 0),
+                    sheet.getRow(1).getCell(0).getLocalDateTimeCellValue());
+            assertEquals(CellType.STRING, sheet.getRow(1).getCell(1).getCellType());
+            assertEquals("=Texto do usuário", sheet.getRow(1).getCell(1).getStringCellValue());
+            assertEquals("Descrição com acentos", sheet.getRow(2).getCell(1).getStringCellValue());
+            assertEquals(CellType.NUMERIC, sheet.getRow(2).getCell(2).getCellType());
+            assertEquals(7.5, sheet.getRow(2).getCell(2).getNumericCellValue());
+            assertEquals(java.time.LocalDateTime.of(2026, 11, 2, 10, 30, 45),
+                    sheet.getRow(2).getCell(0).getLocalDateTimeCellValue());
+        }
+    }
 
     @Test
     void preservesTemplateAndUpdatesValuesAndBothChartCaches() throws Exception {
@@ -29,7 +61,7 @@ class XlsxReportGeneratorTest {
 
         try (var workbook = new XSSFWorkbook(new ByteArrayInputStream(generator.generate(report)))) {
             var summary = workbook.getSheet("weekly-report");
-            assertEquals(3, workbook.getNumberOfSheets());
+            assertEquals(4, workbook.getNumberOfSheets());
             assertEquals("A1:B2", summary.getMergedRegion(0).formatAsString());
             assertTrue(DateUtil.isCellDateFormatted(summary.getRow(3).getCell(0)));
             assertEquals(LocalDate.of(2026, 11, 1),
@@ -61,6 +93,7 @@ class XlsxReportGeneratorTest {
         try (var workbook = new XSSFWorkbook(new ByteArrayInputStream(
                 bytes))) {
             assertEquals(CellType.BLANK, workbook.getSheet("weekly-report").getRow(6).getCell(1).getCellType());
+            assertEquals(1, workbook.getSheet("Avaliações Do Período").getPhysicalNumberOfRows());
             var sheet = workbook.getSheet("Avaliacoes Por Urgencia");
             for (int row = 0; row < 3; row++) {
                 assertEquals(0, sheet.getRow(row).getCell(1).getNumericCellValue());
@@ -73,7 +106,7 @@ class XlsxReportGeneratorTest {
         assertEquals("Relatório de avaliação Semanal - 2026-11-01-2026-11-08.xlsx",
                 generator.fileName(report(0, null, List.of(), List.of())));
         var utcBoundary = new WeeklyReport(Instant.parse("2026-11-02T01:00:00Z"),
-                Instant.parse("2026-11-09T01:00:00Z"), "Relatório", 0, null, List.of(), List.of());
+                Instant.parse("2026-11-09T01:00:00Z"), "Relatório", 0, null, List.of(), List.of(), List.of());
         assertEquals("Relatório - 2026-11-01-2026-11-08.xlsx", generator.fileName(utcBoundary));
     }
 
@@ -81,6 +114,6 @@ class XlsxReportGeneratorTest {
                                 List<TotalEvaluationUrgency> urgencies) {
         return new WeeklyReport(Instant.parse("2026-11-01T03:00:00Z"),
                 Instant.parse("2026-11-08T03:00:00Z"), "Relatório de avaliação Semanal",
-                total, average, days, urgencies);
+                total, average, days, urgencies, List.of());
     }
 }
