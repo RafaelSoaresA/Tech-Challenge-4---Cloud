@@ -37,7 +37,8 @@ class SnsPublicadorAlertaTest {
         assertEquals("arn:aws:sns:us-east-1:123456789012:alertas-dev", requisicao.topicArn());
         assertTrue(requisicao.message().contains("Aula confusa"));
         assertTrue(requisicao.message().contains("Urgência: HIGH"));
-        assertTrue(requisicao.message().contains("Data de envio do alerta: 2026-11-09T12:05:00Z"));
+        assertTrue(requisicao.message().contains("Data da avaliação: 09/11/2026 09:00:00"));
+        assertTrue(requisicao.message().contains("Data de envio do alerta: 09/11/2026 09:05:00"));
         assertEquals("HIGH", requisicao.messageAttributes().get("urgencia").stringValue());
         assertEquals("a1", requisicao.messageAttributes().get("avaliacaoId").stringValue());
     }
