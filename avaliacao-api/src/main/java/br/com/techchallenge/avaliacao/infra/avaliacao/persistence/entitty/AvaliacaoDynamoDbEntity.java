@@ -5,27 +5,27 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbBean;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbPartitionKey;
 
 @DynamoDbBean
-public class AvaliacaoJpaEntity {
+public class AvaliacaoDynamoDbEntity {
 
     private String id;
     private String descricao;
     private Integer nota;
-    private String data;
+    private String dataEnvio;
 
-    public AvaliacaoJpaEntity() {
+    public AvaliacaoDynamoDbEntity() {
     }
 
-    public AvaliacaoJpaEntity(String descricao, Integer nota, String data) {
+    public AvaliacaoDynamoDbEntity(String descricao, Integer nota, String dataEnvio) {
         this.descricao = descricao;
         this.nota = nota;
-        this.data = data;
+        this.dataEnvio = dataEnvio;
     }
 
-    public AvaliacaoJpaEntity(String id, String descricao, Integer nota, String data) {
+    public AvaliacaoDynamoDbEntity(String id, String descricao, Integer nota, String dataEnvio) {
         this.id = id;
         this.descricao = descricao;
         this.nota = nota;
-        this.data = data;
+        this.dataEnvio = dataEnvio;
     }
 
     @DynamoDbAttribute("id")
@@ -56,12 +56,12 @@ public class AvaliacaoJpaEntity {
         this.nota = nota;
     }
 
-    @DynamoDbAttribute("data")
+    @DynamoDbAttribute("dataEnvio")
     public String getData() {
-        return data;
+        return dataEnvio;
     }
 
     public void setData(String data) {
-        this.data = data;
+        this.dataEnvio = data;
     }
 }
