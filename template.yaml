@@ -172,6 +172,10 @@ Resources:
       LogGroupName: !Sub "/aws/lambda/${RelatorioSemanalFunction}"
       RetentionInDays: 7
 
+  # US14 (alarmes + dashboard) já existe no console da conta do grupo
+  # (criado pelo Dev 5). Não recria aqui para não duplicar recursos.
+  # Ver docs/SEGURANCA_E_MONITORAMENTO.md.
+
 Outputs:
   ApiUrl:
     Description: URL base da API (use no Postman)
