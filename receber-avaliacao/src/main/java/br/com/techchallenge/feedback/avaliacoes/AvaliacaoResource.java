@@ -1,7 +1,6 @@
 package br.com.techchallenge.feedback.avaliacoes;
 
 import java.time.Instant;
-import java.util.Map;
 import java.util.UUID;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
@@ -15,9 +14,8 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
-import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
-import software.amazon.awssdk.services.dynamodb.model.PutItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.DynamoDbException;
+import software.amazon.awssdk.services.dynamodb.model.PutItemRequest;
 
 /**
  * ESQUELETO da Lambda 1 (Dev 1 evolui nas US01/US02/US03).
@@ -52,17 +50,14 @@ public class AvaliacaoResource {
         try {
             dynamo.putItem(PutItemRequest.builder()
                     .tableName(tabela)
-                    .item(Map.of(
-                            "id", AttributeValue.fromS(id),
-                            "descricao", AttributeValue.fromS(descricao),
-                            "nota", AttributeValue.fromN(Double.toString(nota)),
-                            "dataEnvio", AttributeValue.fromS(dataEnvio)))
+                    .item(ItemAvaliacaoDynamo.de(id, descricao, nota, dataEnvio))
                     .build());
         } catch (DynamoDbException e) {
-            LOG.error("Falha ao gravar avaliação no DynamoDB", e);
+            LOG.errorf(e, "Falha ao gravar avaliacao no DynamoDB tabela=%s id=%s", tabela, id);
             return Response.serverError().entity(new ErroResponse("Falha ao registrar avaliação")).build();
         }
 
+        LOG.infof("Avaliacao registrada id=%s nota=%s dataEnvio=%s", id, nota, dataEnvio);
         return Response.status(Response.Status.CREATED)
                 .entity(new AvaliacaoResponse(id, descricao, nota, dataEnvio))
                 .build();
