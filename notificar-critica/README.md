@@ -48,7 +48,7 @@ Destinatário: definido no `template.yaml` pelo parâmetro `AdminEmail`, assinad
 
 Mensagem publicada:
 
-Só `HIGH` gera alerta; `MEDIUM` e `LOW` são registrados no log e ignorados.
+`HIGH` e `MEDIUM` geram alerta; `LOW` é registrado no log e ignorado. O assunto do e-mail inclui a urgência (`alerta.assunto=[Feedback] Avaliacao %s`).
 
 ```text
 Avaliação com urgência HIGH recebida
