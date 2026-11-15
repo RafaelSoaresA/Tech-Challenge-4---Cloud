@@ -69,7 +69,7 @@ public class NotificarCriticaHandler implements RequestHandler<DynamodbEvent, Ma
             processados++;
 
             Urgencia urgencia = ClassificadorUrgencia.classificar(avaliacao.nota(), limiteNotaCritica);
-            if (urgencia != Urgencia.HIGH) {
+            if (urgencia == Urgencia.LOW) {
                 LOG.infof("Avaliacao %s com urgencia %s (nota=%s); alerta nao enviado",
                         avaliacao.id(), urgencia, avaliacao.nota());
                 continue;
