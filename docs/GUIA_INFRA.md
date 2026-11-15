@@ -218,7 +218,7 @@ Checklist da US12:
 | Dev 1 + Dev 2 | Evento de avaliação (US03): o DynamoDB Stream é o evento; o Dev 1 não chama o Dev 2 diretamente (desacoplado) | Sim |
 | Dev 2 | Regra de criticidade: `nota <= LIMITE_NOTA_CRITICA` (padrão 4) — é um parâmetro do template | Sim |
 | Dev 3 | Horário (segunda 8h, America/Sao_Paulo), formato JSON no S3 em `relatorios/AAAA-MM-DD.json` | Sim |
-| Dev 5 | Refinar a política da role do GitHub, alarmes do CloudWatch (dá para adicionar no `template.yaml`) | Base pronta |
+| Dev 5 | Segurança (IAM), alarmes/dashboard CloudWatch (já no console), docs e testes de contrato | Ver [`SEGURANCA_E_MONITORAMENTO.md`](SEGURANCA_E_MONITORAMENTO.md) |
 
 Regra de ouro: **ninguém cria recurso pelo console** (exceto o bootstrap). Tudo que for novo entra no `template.yaml` via PR. Senão a infra deixa de ser reproduzível (US11).
 
