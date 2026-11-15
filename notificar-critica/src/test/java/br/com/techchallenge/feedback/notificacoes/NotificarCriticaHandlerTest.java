@@ -32,13 +32,28 @@ class NotificarCriticaHandlerTest {
     private final NotificarCriticaHandler handler = new NotificarCriticaHandler(publicador, 4);
 
     @Test
-    void publicaApenasAvaliacoesCriticas() throws Exception {
-        DynamodbEvent evento = evento(registro("critica", "2"), registro("normal", "9"));
+    void publicaAvaliacoesHighEMedium() throws Exception {
+        DynamodbEvent evento = evento(
+                registro("critica", "2"),
+                registro("media", "5"),
+                registro("mediaLimite", "6.9"),
+                registro("baixa", "9"));
 
         Map<String, Integer> resultado = handler.handleRequest(evento, null);
 
-        assertEquals(List.of("critica"), publicados.stream().map(AvaliacaoEvento::id).toList());
-        assertEquals(Map.of("processados", 2, "alertasEnviados", 1, "ignorados", 0), resultado);
+        assertEquals(List.of("critica", "media", "mediaLimite"),
+                publicados.stream().map(AvaliacaoEvento::id).toList());
+        assertEquals(Map.of("processados", 4, "alertasEnviados", 3, "ignorados", 0), resultado);
+    }
+
+    @Test
+    void naoPublicaAvaliacaoLow() throws Exception {
+        DynamodbEvent evento = evento(registro("baixa", "7"), registro("alta", "10"));
+
+        Map<String, Integer> resultado = handler.handleRequest(evento, null);
+
+        assertTrue(publicados.isEmpty());
+        assertEquals(Map.of("processados", 2, "alertasEnviados", 0, "ignorados", 0), resultado);
     }
 
     @Test
