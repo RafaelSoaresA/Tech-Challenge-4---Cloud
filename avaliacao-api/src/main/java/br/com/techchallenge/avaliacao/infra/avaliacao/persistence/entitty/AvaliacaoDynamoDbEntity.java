@@ -10,22 +10,22 @@ public class AvaliacaoDynamoDbEntity {
     private String id;
     private String descricao;
     private Integer nota;
-    private String data;
+    private String dataEnvio;
 
     public AvaliacaoDynamoDbEntity() {
     }
 
-    public AvaliacaoDynamoDbEntity(String descricao, Integer nota, String data) {
+    public AvaliacaoDynamoDbEntity(String descricao, Integer nota, String dataEnvio) {
         this.descricao = descricao;
         this.nota = nota;
-        this.data = data;
+        this.dataEnvio = dataEnvio;
     }
 
-    public AvaliacaoDynamoDbEntity(String id, String descricao, Integer nota, String data) {
+    public AvaliacaoDynamoDbEntity(String id, String descricao, Integer nota, String dataEnvio) {
         this.id = id;
         this.descricao = descricao;
         this.nota = nota;
-        this.data = data;
+        this.dataEnvio = dataEnvio;
     }
 
     @DynamoDbAttribute("id")
@@ -56,12 +56,12 @@ public class AvaliacaoDynamoDbEntity {
         this.nota = nota;
     }
 
-    @DynamoDbAttribute("data")
-    public String getData() {
-        return data;
+    @DynamoDbAttribute("dataEnvio")
+    public String getDataEnvio() {
+        return dataEnvio;
     }
 
-    public void setData(String data) {
-        this.data = data;
+    public void setDataEnvio(String dataEnvio) {
+        this.dataEnvio = dataEnvio;
     }
 }
