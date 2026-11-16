@@ -1,7 +1,7 @@
 package br.com.techchallenge.avaliacao.infra.avaliacao.mapper;
 
 import br.com.techchallenge.avaliacao.domain.avaliacao.entiy.Avaliacao;
-import br.com.techchallenge.avaliacao.infra.avaliacao.persistence.entitty.AvaliacaoJpaEntity;
+import br.com.techchallenge.avaliacao.infra.avaliacao.persistence.entitty.AvaliacaoDynamoDbEntity;
 import org.springframework.stereotype.Component;
 
 import java.util.UUID;
@@ -9,8 +9,8 @@ import java.util.UUID;
 @Component
 public class AvaliacaoPersistenceMapper {
 
-    public AvaliacaoJpaEntity toJpa(Avaliacao avaliacao) {
-        return new AvaliacaoJpaEntity(
+    public AvaliacaoDynamoDbEntity toJpa(Avaliacao avaliacao) {
+        return new AvaliacaoDynamoDbEntity(
                 avaliacao.getId().toString(),
                 avaliacao.getDescricao(),
                 avaliacao.getNota(),
@@ -18,11 +18,11 @@ public class AvaliacaoPersistenceMapper {
         );
     }
 
-    public Avaliacao toDomain(AvaliacaoJpaEntity avaliacaoJpaEntity) {
+    public Avaliacao toDomain(AvaliacaoDynamoDbEntity avaliacaoDynamoDbEntity) {
         return Avaliacao.builder()
-                .id(UUID.fromString(avaliacaoJpaEntity.getId()))
-                .descricao(avaliacaoJpaEntity.getDescricao())
-                .nota(avaliacaoJpaEntity.getNota())
+                .id(UUID.fromString(avaliacaoDynamoDbEntity.getId()))
+                .descricao(avaliacaoDynamoDbEntity.getDescricao())
+                .nota(avaliacaoDynamoDbEntity.getNota())
                 .build();
     }
 
