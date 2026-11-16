@@ -1,5 +1,7 @@
 # Guia do Dev 4: Infraestrutura AWS e CI/CD (US10, US11, US12)
 
+A arquitetura em produção está em [`SEGURANCA_E_MONITORAMENTO.md`](SEGURANCA_E_MONITORAMENTO.md): a API é Spring Boot no Elastic Beanstalk e só restam as Lambdas de alerta e de relatório. O texto abaixo descreve o primeiro kit (três Lambdas) e serve de histórico de como a conta e o pipeline foram criados.
+
 Guia para quem nunca usou AWS. Siga as etapas na ordem. Cada uma termina com um teste rápido para você confirmar que deu certo.
 
 ---

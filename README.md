@@ -1,6 +1,6 @@
-# Tech Challenge Fase 4 — Plataforma de feedbacks de aulas (AWS Serverless, Java/Quarkus)
+# Tech Challenge Fase 4 — Plataforma de feedbacks de aulas (AWS, Java)
 
-Infraestrutura como código com **AWS SAM**, Lambdas em **Java 21 + Quarkus** (Maven) e deploy automático com **GitHub Actions**.
+Infraestrutura como código com **AWS SAM**. A API de avaliação é **Spring Boot** no Elastic Beanstalk. As funções de alerta e de relatório são **Lambdas Java 21 + Quarkus**. O deploy é automático com **GitHub Actions**.
 
 - Guia de infraestrutura e deploy: [`docs/GUIA_INFRA.md`](docs/GUIA_INFRA.md)
 - Segurança, monitoramento e qualidade (Dev 5): [`docs/SEGURANCA_E_MONITORAMENTO.md`](docs/SEGURANCA_E_MONITORAMENTO.md)
@@ -8,19 +8,19 @@ Infraestrutura como código com **AWS SAM**, Lambdas em **Java 21 + Quarkus** (M
 - Infra: [`template.yaml`](template.yaml)
 - Pipeline: [`.github/workflows/ci-cd.yml`](.github/workflows/ci-cd.yml)
 
-## Módulos (uma Lambda cada)
+## Módulos
 
-| Pasta | Lambda | Responsável |
+| Pasta | O que sobe | Responsável |
 |---|---|---|
-| `receber-avaliacao/` | `POST /avaliacao` → DynamoDB | Dev 1 |
-| `notificar-critica/` | DynamoDB Stream → SNS (e-mail) | Dev 2 |
+| `avaliacao-api/` | API Spring no Elastic Beanstalk. `POST /api/avaliacao/v1` grava no DynamoDB e publica no SNS `avaliacao-eventos` | Dev 1 |
+| `notificar-critica/` | DynamoDB Stream → SNS `alertas-criticos` (e-mail) | Dev 2 |
 | `relatorio-semanal/` | EventBridge Scheduler → S3 | Dev 3 |
 
-Transversal (Dev 5): IAM mínimo nas roles, logs/alarmes CloudWatch, testes de contrato, documentação e roteiro de demo.
+Transversal (Dev 5): IAM mínimo nas roles, logs/alarmes CloudWatch, teste de contrato, documentação e roteiro de demo.
 
 ## Contrato do item (DynamoDB)
 
-Campos gravados por `receber-avaliacao` e lidos pelas outras Lambdas:
+Campos gravados pela `avaliacao-api` e lidos pelas Lambdas:
 
 | Campo | Tipo | Exemplo |
 |---|---|---|
@@ -29,24 +29,20 @@ Campos gravados por `receber-avaliacao` e lidos pelas outras Lambdas:
 | `nota` | N | `0` a `10` |
 | `dataEnvio` | S | ISO-8601 (`2026-11-15T12:00:00Z`) |
 
-Avaliação crítica: `nota <= LimiteNotaCritica` (padrão **4**).
+Urgência do alerta: nota `<= 4` é alta; abaixo de `7` é média. As duas geram e-mail. A partir de `7` não gera.
 
-## Deploy rápido (máquina local)
+## Deploy
 
-Requisitos: JDK 21, Maven, AWS CLI e SAM CLI.
-
-```bash
-mvn clean package        # gera target/function.zip em cada módulo
-sam deploy               # ajuste AdminEmail em samconfig.toml antes
-```
+O deploy da `main` é o GitHub Actions (OIDC). Ele empacota as Lambdas, envia o zip da API ao S3 e roda `sam deploy`.
 
 ## Testes
 
 ```bash
 mvn verify
+mvn -B -f avaliacao-api/pom.xml verify
 ```
 
-O CI também valida o `template.yaml` com `cfn-lint` e, após deploy na `main`, faz smoke test (`201` e `400` no `POST /avaliacao`).
+O CI também valida o `template.yaml` com `cfn-lint` e, após o deploy na `main`, faz smoke test (`201` e `400`) em `POST /api/avaliacao/v1`.
 
 ## Remover tudo
 
