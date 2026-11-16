@@ -74,7 +74,7 @@ class AvaliacaoControllerTest {
     class CriarAvaliacao {
 
         @Test
-        @DisplayName("Deve criar avaliação e retornar HTTP 200")
+        @DisplayName("Deve criar avaliação e retornar HTTP 201")
         void deveCriarAvaliacaoComSucesso() {
             // Arrange
             AvaliacaoOutput output = criarOutput();
@@ -87,7 +87,7 @@ class AvaliacaoControllerTest {
                     controller.createAvaliacao(request);
 
             // Assert
-            assertEquals(HttpStatus.OK, resultado.getStatusCode());
+            assertEquals(HttpStatus.CREATED, resultado.getStatusCode());
             assertNotNull(resultado.getBody());
 
             assertEquals(id, resultado.getBody().getId());
