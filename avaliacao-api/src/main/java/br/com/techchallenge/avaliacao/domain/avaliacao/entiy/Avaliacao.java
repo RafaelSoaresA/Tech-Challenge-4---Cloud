@@ -14,7 +14,7 @@ public class Avaliacao {
     private UUID id;
     private String descricao;
     private Integer nota;
-    private Instant data;
+    private Instant dataEnvio;
 
 
     private Avaliacao(Builder builder) {
@@ -26,7 +26,7 @@ public class Avaliacao {
         this.id = builder.id != null ? builder.id : UUID.randomUUID();
         this.descricao = builder.descricao;
         this.nota = builder.nota;
-        this.data = Instant.now();
+        this.dataEnvio = Instant.now();
     }
 
     public static Builder builder() {
@@ -96,7 +96,7 @@ public class Avaliacao {
     }
 
     public Instant getData() {
-        return data;
+        return dataEnvio;
     }
 
     @Override
