@@ -11,7 +11,7 @@ Infraestrutura como código com **AWS SAM**, Lambdas em **Java 21 + Quarkus** (M
 ## Módulos (uma Lambda cada)
 
 | Pasta | Lambda | Responsável |
-|---|---|---|
+|---|---|---| 
 | `receber-avaliacao/` | `POST /avaliacao` → DynamoDB | Dev 1 |
 | `notificar-critica/` | DynamoDB Stream → SNS (e-mail) | Dev 2 |
 | `relatorio-semanal/` | EventBridge Scheduler → S3 | Dev 3 |
