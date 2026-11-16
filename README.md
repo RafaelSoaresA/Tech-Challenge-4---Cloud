@@ -1,4 +1,4 @@
-﻿# Tech Challenge — Fase 4: Plataforma de feedbacks de aulas
+# Tech Challenge — Fase 4: Plataforma de feedbacks de aulas
 
 Plataforma Java 21 para registrar avaliações, enviar alertas de urgência e gerar relatórios semanais em Excel. A infraestrutura AWS é declarada com SAM/CloudFormation e o deploy é automatizado pelo GitHub Actions.
 
