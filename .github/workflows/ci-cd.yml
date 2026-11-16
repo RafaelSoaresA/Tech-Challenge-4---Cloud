@@ -5,7 +5,7 @@ on:
     branches: [main]      # PR: só compila e testa (não toca na AWS)
   push:
     branches: [main]      # merge na main: testa + deploy + smoke test
-  workflow_dispatch: {}   # botão "Run workflow" manual
+  workflow_dispatch: {}
 
 permissions:
   id-token: write         # necessário para login na AWS via OIDC (sem chaves fixas)
