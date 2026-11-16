@@ -56,7 +56,7 @@ class DynamoDBAvaliacaoGatewayTest {
     @BeforeEach
     void setUp() {
         when(client.table(
-                eq("avaliacao_jpa_entity"),
+                eq("avaliacoes-dev"),
                 any(TableSchema.class)
         )).thenReturn(tabela);
 

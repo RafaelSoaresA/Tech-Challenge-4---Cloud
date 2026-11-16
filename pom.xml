@@ -9,9 +9,8 @@
   <packaging>pom</packaging>
   <name>Feedback de aulas (Tech Challenge Fase 4)</name>
 
-  <!-- Cada módulo é uma Lambda Quarkus independente (gera target/function.zip). -->
+  <!-- A API de avaliação (avaliacao-api, Spring Boot) tem pom próprio e roda no Beanstalk; aqui ficam só as Lambdas. Cada módulo é uma Lambda Quarkus independente (gera target/function.zip). -->
   <modules>
-    <module>receber-avaliacao</module>
     <module>notificar-critica</module>
     <module>relatorio-semanal</module>
   </modules>

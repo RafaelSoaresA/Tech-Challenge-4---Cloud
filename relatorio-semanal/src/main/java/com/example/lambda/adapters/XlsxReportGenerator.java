@@ -21,6 +21,7 @@ import java.io.UncheckedIOException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
+import java.util.Comparator;
 import java.util.Objects;
 import java.util.TreeMap;
 
@@ -41,6 +42,7 @@ public class XlsxReportGenerator {
             fillSummary(workbook, report);
             fillDays(workbook, report);
             fillUrgencies(workbook, report);
+            fillEvaluations(workbook, report);
             workbook.write(output);
             return output.toByteArray();
         } catch (IOException exception) {
@@ -58,6 +60,44 @@ public class XlsxReportGenerator {
         }
         return description + " - " + localDate(report.getPeriodStart())
                 + "-" + localDate(report.getPeriodEnd()) + ".xlsx";
+    }
+
+    private void fillEvaluations(XSSFWorkbook workbook, WeeklyReport report) {
+        XSSFSheet sheet = workbook.createSheet("Avaliações Do Período");
+        String[] headers = {"Data de Envio", "Descrição", "Nota"};
+        CellStyle headerStyle = workbook.createCellStyle();
+        var headerFont = workbook.createFont();
+        headerFont.setBold(true);
+        headerStyle.setFont(headerFont);
+        for (int column = 0; column < headers.length; column++) {
+            Cell header = cell(sheet, 0, column);
+            header.setCellValue(headers[column]);
+            header.setCellStyle(headerStyle);
+        }
+
+        CellStyle dateStyle = workbook.createCellStyle();
+        dateStyle.setDataFormat(workbook.createDataFormat().getFormat("dd/mm/yyyy hh:mm:ss"));
+        CellStyle descriptionStyle = workbook.createCellStyle();
+        descriptionStyle.setWrapText(true);
+        var evaluations = report.getEvaluations().stream()
+                .sorted(Comparator.comparing(com.example.lambda.domain.Evaluation::getCreatedDate))
+                .toList();
+        int row = 1;
+        for (var evaluation : evaluations) {
+            Cell date = cell(sheet, row, 0);
+            date.setCellValue(evaluation.getCreatedDate().atZone(ReportTime.ZONE).toLocalDateTime());
+            date.setCellStyle(dateStyle);
+            Cell description = cell(sheet, row, 1);
+            description.setCellValue(evaluation.getDescription());
+            description.setCellStyle(descriptionStyle);
+            cell(sheet, row, 2).setCellValue(evaluation.getEvaluation());
+            row++;
+        }
+        sheet.setColumnWidth(0, 22 * 256);
+        sheet.setColumnWidth(1, 80 * 256);
+        sheet.setColumnWidth(2, 12 * 256);
+        sheet.createFreezePane(0, 1);
+        sheet.setAutoFilter(new CellRangeAddress(0, row - 1, 0, 2));
     }
 
     private void fillSummary(XSSFWorkbook workbook, WeeklyReport report) {

@@ -12,11 +12,13 @@ public class WeeklyReport {
     private final Double averageEvaluations;
     private final List<TotalEvaluationInDay> evaluationsPerDay;
     private final List<TotalEvaluationUrgency> evaluationsPerUrgency;
+    private final List<Evaluation> evaluations;
 
     public WeeklyReport(Instant periodStart, Instant periodEnd, String description,
                         Integer totalEvaluations, Double averageEvaluations,
                         List<TotalEvaluationInDay> evaluationsPerDay,
-                        List<TotalEvaluationUrgency> evaluationsPerUrgency) {
+                        List<TotalEvaluationUrgency> evaluationsPerUrgency,
+                        List<Evaluation> evaluations) {
         this.periodStart = Objects.requireNonNull(periodStart, "Period start must not be null");
         this.periodEnd = Objects.requireNonNull(periodEnd, "Period end must not be null");
         if (!periodStart.isBefore(periodEnd)) {
@@ -36,6 +38,7 @@ public class WeeklyReport {
         this.averageEvaluations = averageEvaluations;
         this.evaluationsPerDay = List.copyOf(evaluationsPerDay);
         this.evaluationsPerUrgency = List.copyOf(evaluationsPerUrgency);
+        this.evaluations = List.copyOf(evaluations);
     }
 
     public Instant getPeriodStart() { return periodStart; }
@@ -45,5 +48,6 @@ public class WeeklyReport {
     public Double getAverageEvaluations() { return averageEvaluations; }
     public List<TotalEvaluationInDay> getEvaluationsPerDay() { return evaluationsPerDay; }
     public List<TotalEvaluationUrgency> getEvaluationsPerUrgency() { return evaluationsPerUrgency; }
+    public List<Evaluation> getEvaluations() { return evaluations; }
 }
 
