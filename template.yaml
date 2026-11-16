@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Transform: AWS::Serverless-2016-10-31
-Description: Tech Challenge Fase 4 - Plataforma de feedbacks de aulas, Java/Quarkus (US10/US11)
+Description: Tech Challenge Fase 4 - Plataforma de feedbacks de aulas (API Spring no Elastic Beanstalk + Lambdas Quarkus) (US10/US11)
 
 # ---------------------------------------------------------------------------
 # Parâmetros: valores que mudam por ambiente. São passados no deploy
@@ -13,12 +13,26 @@ Parameters:
     AllowedValues: [dev, prod]
   AdminEmail:
     Type: String
-    Default: fiap.tech.challenge.4.2026@gmail.com
     Description: E-mail que recebe os alertas críticos (precisa confirmar a assinatura do SNS)
   LimiteNotaCritica:
     Type: Number
     Default: 4
     Description: Nota igual ou abaixo deste valor é considerada crítica (alinhar com Dev 2 / US04)
+  # --- API de avaliação (Spring Boot) no Elastic Beanstalk: o pipeline preenche estes 4 ---
+  AppBundleBucket:
+    Type: String
+    Description: Bucket S3 onde o pipeline enviou o pacote (zip) da avaliacao-api
+  AppBundleKey:
+    Type: String
+    Description: Chave (caminho) do zip no bucket. Muda a cada commit, e isso dispara o redeploy da API
+  SolutionStackName:
+    Type: String
+    Description: Plataforma do Beanstalk (Corretto 21 / Amazon Linux 2023). O pipeline descobre a mais recente
+  InstanceType:
+    Type: String
+    Default: t3.small
+    AllowedValues: [t3.micro, t3.small, t4g.micro, t4g.small]
+    Description: t3.small (2 GB) é o mais seguro para Spring Boot; t3.micro (1 GB) é mais barato mas apertado
 
 # ---------------------------------------------------------------------------
 # Globals: configurações herdadas por TODAS as Lambdas.
@@ -86,23 +100,117 @@ Resources:
             Status: Enabled
             ExpirationInDays: 90
 
-  # ------------------------- Lambda 1: receber avaliação -------------------------
-  # CodeUri aponta para o zip gerado pelo "mvn package" no módulo do Dev 1.
-  # Cria também o API Gateway (HTTP API) automaticamente via evento HttpApi.
-  ReceberAvaliacaoFunction:
-    Type: AWS::Serverless::Function
+  # ---------------- Tópico de eventos publicado pela API (US03) ----------------
+  # A avaliacao-api publica aqui o evento AVALIACAO_CRIADA (ver SnsAvaliacaoEventPublisher).
+  # Hoje o alerta crítico sai pela Lambda do Stream; se a equipe preferir, a Lambda de
+  # notificação pode assinar este tópico em vez do Stream (decisão do Dev 2).
+  TopicoAvaliacoes:
+    Type: AWS::SNS::Topic
     Properties:
-      FunctionName: !Sub "receber-avaliacao-${Stage}"
-      CodeUri: receber-avaliacao/target/function.zip
+      TopicName: !Sub "avaliacao-eventos-${Stage}"
+
+  # ---------------- API de avaliação (Spring Boot) no Elastic Beanstalk ----------------
+  # Os nomes de role/instance profile ficam automáticos (começam por "feedback-aulas-dev-"),
+  # que é o padrão liberado na role do GitHub Actions (bootstrap/github-oidc-role.yaml).
+  EbInstanceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AWSElasticBeanstalkWebTier   # logs, S3 do Beanstalk
       Policies:
-        - DynamoDBWritePolicy:
-            TableName: !Ref TabelaAvaliacoes
-      Events:
-        PostAvaliacao:
-          Type: HttpApi
-          Properties:
-            Path: /avaliacao                # sem "ç": evite acentos em URLs
-            Method: POST
+        - PolicyName: acesso-dados-da-api
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow           # a API grava, lê, lista e apaga avaliações
+                Action:
+                  - dynamodb:PutItem
+                  - dynamodb:GetItem
+                  - dynamodb:DeleteItem
+                  - dynamodb:Scan
+                  - dynamodb:Query
+                  - dynamodb:DescribeTable
+                Resource: !GetAtt TabelaAvaliacoes.Arn
+              - Effect: Allow           # e publica o evento AVALIACAO_CRIADA
+                Action: sns:Publish
+                Resource: !Ref TopicoAvaliacoes
+
+  EbInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles: [!Ref EbInstanceRole]
+
+  EbApplication:
+    Type: AWS::ElasticBeanstalk::Application
+    Properties:
+      ApplicationName: !Sub "feedback-aulas-api-${Stage}"
+
+  EbApplicationVersion:
+    Type: AWS::ElasticBeanstalk::ApplicationVersion
+    Properties:
+      ApplicationName: !Ref EbApplication
+      SourceBundle:
+        S3Bucket: !Ref AppBundleBucket
+        S3Key: !Ref AppBundleKey
+
+  EbEnvironment:
+    Type: AWS::ElasticBeanstalk::Environment
+    Properties:
+      EnvironmentName: !Sub "feedback-api-${Stage}"
+      ApplicationName: !Ref EbApplication
+      VersionLabel: !Ref EbApplicationVersion
+      SolutionStackName: !Ref SolutionStackName
+      OptionSettings:
+        - {Namespace: "aws:elasticbeanstalk:environment", OptionName: EnvironmentType, Value: SingleInstance}   # 1 EC2, sem load balancer (mais barato)
+        - {Namespace: "aws:autoscaling:launchconfiguration", OptionName: IamInstanceProfile, Value: !Ref EbInstanceProfile}
+        - {Namespace: "aws:ec2:instances", OptionName: InstanceTypes, Value: !Ref InstanceType}
+        - {Namespace: "aws:elasticbeanstalk:application", OptionName: "Application Healthcheck URL", Value: /actuator/health}
+        - {Namespace: "aws:elasticbeanstalk:cloudwatch:logs", OptionName: StreamLogs, Value: "true"}           # logs no CloudWatch (US14)
+        - {Namespace: "aws:elasticbeanstalk:cloudwatch:logs", OptionName: RetentionInDays, Value: "7"}
+        - {Namespace: "aws:elasticbeanstalk:cloudwatch:logs", OptionName: DeleteOnTerminate, Value: "true"}
+        # Variáveis de ambiente lidas pelo Spring (relaxed binding: AWS_SNS_AVALIACAO_TOPIC_ARN = aws.sns.avaliacao-topic-arn)
+        - {Namespace: "aws:elasticbeanstalk:application:environment", OptionName: SERVER_PORT, Value: "5000"}   # porta que o nginx do Beanstalk espera
+        - {Namespace: "aws:elasticbeanstalk:application:environment", OptionName: AWS_REGION, Value: !Ref "AWS::Region"}
+        - {Namespace: "aws:elasticbeanstalk:application:environment", OptionName: AWS_SNS_AVALIACAO_TOPIC_ARN, Value: !Ref TopicoAvaliacoes}
+
+  # ---------------- API Gateway (HTTP API) na frente do Beanstalk (US10) ----------------
+  # Dá HTTPS e a URL oficial da aplicação; repassa /api/** para a API Spring.
+  HttpApi:
+    Type: AWS::ApiGatewayV2::Api
+    Properties:
+      Name: !Sub "feedback-api-${Stage}"
+      ProtocolType: HTTP
+
+  HttpApiIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref HttpApi
+      IntegrationType: HTTP_PROXY
+      IntegrationMethod: ANY
+      IntegrationUri: !Sub "http://${EbEnvironment.EndpointURL}/api/{proxy}"
+      PayloadFormatVersion: "1.0"
+      TimeoutInMillis: 30000
+
+  HttpApiRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref HttpApi
+      RouteKey: "ANY /api/{proxy+}"
+      Target: !Sub "integrations/${HttpApiIntegration}"
+
+  HttpApiStage:
+    Type: AWS::ApiGatewayV2::Stage
+    Properties:
+      ApiId: !Ref HttpApi
+      StageName: $default
+      AutoDeploy: true
 
   # ------------------------- Lambda 2: alerta crítico -------------------------
   NotificarCriticaFunction:
@@ -139,9 +247,8 @@ Resources:
       Timeout: 60
       Environment:
         Variables:
-          QUARKUS_LAMBDA_HANDLER: weekly-report          # = @Named("weekly-report")
-          EVALUATIONS_TABLE: !Ref TabelaAvaliacoes
-          REPORTS_BUCKET: !Ref BucketRelatorios
+          QUARKUS_LAMBDA_HANDLER: relatorio-semanal      # = @Named("relatorio-semanal")
+          BUCKET_RELATORIOS: !Ref BucketRelatorios
       Policies:
         - DynamoDBReadPolicy:
             TableName: !Ref TabelaAvaliacoes
@@ -156,11 +263,6 @@ Resources:
             Input: "{}"
 
   # --------------- Logs com retenção curta (evita custo acumulado) ---------------
-  LogsReceber:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: !Sub "/aws/lambda/${ReceberAvaliacaoFunction}"
-      RetentionInDays: 7
   LogsNotificar:
     Type: AWS::Logs::LogGroup
     Properties:
@@ -172,14 +274,15 @@ Resources:
       LogGroupName: !Sub "/aws/lambda/${RelatorioSemanalFunction}"
       RetentionInDays: 7
 
-  # US14 (alarmes + dashboard) já existe no console da conta do grupo
-  # (criado pelo Dev 5). Não recria aqui para não duplicar recursos.
-  # Ver docs/SEGURANCA_E_MONITORAMENTO.md.
-
 Outputs:
   ApiUrl:
-    Description: URL base da API (use no Postman)
-    Value: !Sub "https://${ServerlessHttpApi}.execute-api.${AWS::Region}.amazonaws.com"
+    Description: "URL base da API (use no Postman). Rotas em /api/avaliacao/v1"
+    Value: !Sub "https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com"
+  BeanstalkUrl:
+    Description: "Endereço direto da API no Beanstalk (diagnóstico; o oficial é o ApiUrl)"
+    Value: !Sub "http://${EbEnvironment.EndpointURL}"
+  TopicoAvaliacoesArn:
+    Value: !Ref TopicoAvaliacoes
   TabelaAvaliacoes:
     Value: !Ref TabelaAvaliacoes
   TopicoAlertasArn:
