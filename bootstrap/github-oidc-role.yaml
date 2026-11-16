@@ -7,10 +7,10 @@ Description: >
 Parameters:
   GitHubOwner:
     Type: String
-    Description: Usuário ou organização dono do repositório (ex. rafaelsoares)
+    Description: RafaelSoaresA
   GitHubRepo:
     Type: String
-    Description: Nome do repositório (ex. tech-challenge-fase4)
+    Description: Tech-Challenge-4---Cloud
 
 Resources:
   GitHubOidcProvider:
@@ -35,8 +35,13 @@ Resources:
               StringEquals:
                 token.actions.githubusercontent.com:aud: sts.amazonaws.com
               StringLike:
-                # Só a branch main deste repositório pode assumir a role
-                token.actions.githubusercontent.com:sub: !Sub "repo:${GitHubOwner}/${GitHubRepo}:ref:refs/heads/main"
+                token.actions.githubusercontent.com:sub:
+                  - !Sub "repo:${GitHubOwner}/${GitHubRepo}:ref:refs/heads/main"
+                  - !Sub "repo:${GitHubOwner}@*/${GitHubRepo}@*:ref:refs/heads/main"
+      ManagedPolicyArns:
+        # Permissões do Elastic Beanstalk (EC2, Auto Scaling, S3 do Beanstalk etc.).
+        # É uma política gerenciada pela AWS; em um projeto real seria restringida.
+        - arn:aws:iam::aws:policy/AdministratorAccess-AWSElasticBeanstalk
       Policies:
         - PolicyName: deploy-serverless
           PolicyDocument:
@@ -69,6 +74,19 @@ Resources:
                   - iam:DeleteRolePolicy
                   - iam:GetRolePolicy
                 Resource: !Sub "arn:aws:iam::${AWS::AccountId}:role/feedback-aulas-*"
+              - Sid: InstanceProfileDoBeanstalk
+                Effect: Allow
+                Action:
+                  - iam:CreateInstanceProfile
+                  - iam:DeleteInstanceProfile
+                  - iam:GetInstanceProfile
+                  - iam:AddRoleToInstanceProfile
+                  - iam:RemoveRoleFromInstanceProfile
+                Resource: !Sub "arn:aws:iam::${AWS::AccountId}:instance-profile/feedback-aulas-*"
+              - Sid: RolesVinculadasAoServico
+                Effect: Allow
+                Action: iam:CreateServiceLinkedRole
+                Resource: "*"
 
 Outputs:
   RoleArn:

@@ -10,7 +10,7 @@ public class AvaliacaoJpaEntity {
     private String id;
     private String descricao;
     private Integer nota;
-    private String data;
+    private String dataEnvio;
 
     public AvaliacaoJpaEntity() {
     }
@@ -18,14 +18,14 @@ public class AvaliacaoJpaEntity {
     public AvaliacaoJpaEntity(String descricao, Integer nota, String data) {
         this.descricao = descricao;
         this.nota = nota;
-        this.data = data;
+        this.dataEnvio = data;
     }
 
     public AvaliacaoJpaEntity(String id, String descricao, Integer nota, String data) {
         this.id = id;
         this.descricao = descricao;
         this.nota = nota;
-        this.data = data;
+        this.dataEnvio = data;
     }
 
     @DynamoDbAttribute("id")
@@ -58,10 +58,10 @@ public class AvaliacaoJpaEntity {
 
     @DynamoDbAttribute("data")
     public String getData() {
-        return data;
+        return dataEnvio;
     }
 
     public void setData(String data) {
-        this.data = data;
+        this.dataEnvio = data;
     }
 }
