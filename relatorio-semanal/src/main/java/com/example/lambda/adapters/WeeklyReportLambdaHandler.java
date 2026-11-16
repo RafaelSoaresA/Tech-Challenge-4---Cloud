@@ -9,7 +9,7 @@ import org.jboss.logging.MDC;
 
 import java.util.concurrent.TimeUnit;
 
-@Named("weekly-report")
+@Named("relatorio-semanal")
 public class WeeklyReportLambdaHandler implements RequestHandler<Object, Void> {
     private static final Logger LOG = Logger.getLogger(WeeklyReportLambdaHandler.class);
 

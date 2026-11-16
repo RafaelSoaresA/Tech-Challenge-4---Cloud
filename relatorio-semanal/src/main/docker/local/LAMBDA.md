@@ -60,7 +60,7 @@ desse container nao suporta `logs tail`.
 - Pacote: `target/function.zip`, incluindo codigo, dependencias e template XLSX.
 - Runtime: Java 21; memoria 1024 MB e timeout 120 s para o teste local.
 - Handler AWS: `io.quarkus.amazon.lambda.runtime.QuarkusStreamHandler::handleRequest`.
-- Handler da aplicacao: `quarkus.lambda.handler=weekly-report`.
+- Handler da aplicacao: `quarkus.lambda.handler=relatorio-semanal`.
 - `lambda-environment.json` usa perfil prod com endpoints `http://localstack:4566`.
   Isso e exclusivo do emulador; nao envie esse arquivo para a AWS real.
 - Socket Docker e rede `weekly-reports-local` permitem executar os containers Lambda.
