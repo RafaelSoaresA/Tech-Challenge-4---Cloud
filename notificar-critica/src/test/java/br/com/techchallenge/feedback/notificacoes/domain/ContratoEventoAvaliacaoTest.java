@@ -12,7 +12,7 @@ import br.com.techchallenge.feedback.notificacoes.dynamodb.DynamoDbObjectMapperC
 
 /**
  * Valida o contrato Dev1 → Dev2 (US03/US15): NewImage com id, descricao, nota (N)
- * e dataEnvio (S ISO-8601), como gravado por receber-avaliacao.
+ * e dataEnvio (S ISO-8601), como gravado pela avaliacao-api.
  */
 class ContratoEventoAvaliacaoTest {
 
@@ -26,7 +26,7 @@ class ContratoEventoAvaliacaoTest {
     }
 
     @Test
-    void extraiCamposDoContratoPersistidoPeloReceberAvaliacao() throws Exception {
+    void extraiCamposDoContratoPersistidoPelaAvaliacaoApi() throws Exception {
         String json = """
                 {
                   "Records": [{

@@ -8,59 +8,63 @@ Conta AWS do grupo: `629137454819` (`Tech Challenge 4 - devOps`), região `us-ea
 
 ```
 Aluno/Postman
-    → API Gateway (HTTPS)
-        → Lambda receber-avaliacao-dev (Java 21 / Quarkus)
+    → API Gateway (HTTPS)  /api/avaliacao/v1
+        → Elastic Beanstalk feedback-api-dev (Spring Boot, 1 EC2)
             → DynamoDB avaliacoes-dev (id, descricao, nota, dataEnvio)
-                → DynamoDB Stream (evento US03)
+            → SNS avaliacao-eventos-dev (evento AVALIACAO_CRIADA)
+                DynamoDB Stream
                     → Lambda notificar-critica-dev
-                        → SNS → e-mail (descrição, urgência, data de envio)
+                        → SNS alertas-criticos-dev → e-mail
 EventBridge (segunda 8h, America/Sao_Paulo)
     → Lambda relatorio-semanal-dev
         → DynamoDB → S3 (bucket privado)
 ```
 
-Stack CloudFormation/SAM: `feedback-aulas-dev`. Modelo: AWS Serverless. Sem EC2/VPC. Lambdas usam execution role (sem access key no código).
+Stack CloudFormation/SAM: `feedback-aulas-dev`. A API usa uma instância EC2 do Elastic Beanstalk. As outras duas funções continuam Lambda, cada uma com execution role (sem access key no código).
+
+URL da API após o deploy de 16/11/2026: `https://ijmxx80oh3.execute-api.us-east-1.amazonaws.com`.
 
 ## US13 — Segurança Cloud
 
 | Controle | Situação |
 |---|---|
-| IAM com menor privilégio nas Lambdas | Roles geradas pelo SAM: receber só grava na tabela; notificar só publica no SNS; relatório só lê DynamoDB e grava no S3 |
-| DynamoDB / S3 restritos | Policies do SAM amarradas ao recurso concreto |
+| IAM da API | Role da instância: DynamoDB só na tabela `avaliacoes-dev`; `sns:Publish` só no tópico `avaliacao-eventos-dev` |
+| IAM das Lambdas | Notificar só publica em `alertas-criticos-dev`. Relatório só lê a tabela e grava no bucket de relatórios |
+| DynamoDB / S3 restritos | Policies amarradas ao recurso concreto. Bucket sem acesso público e com lifecycle de 90 dias |
 | Segredos / deploy | GitHub Actions via OIDC (`bootstrap/github-oidc-role.yaml`) — sem access key no repositório |
-| Bucket de relatórios | Bloqueio de acesso público + lifecycle 90 dias |
 | Usuários IAM individuais | `vinicius`, `dev4-Rafael`, `joao`, `felipe`, `gabriel` (acesso ao console habilitado) |
 | MFA | Ativo em `vinicius`, `dev4-Rafael` e `joao`. Credenciais enviadas a Felipe e Gabriel; MFA deles é self-service |
 
 O que **não** fazer: credencial em chat/README/commit; usar root no dia a dia; abrir o bucket S3.
 
-## US14 — Observabilidade (já na conta AWS)
-
-Recursos criados no console (não versionados de novo no `template.yaml` para evitar duplicar):
+## US14 — Observabilidade
 
 | Recurso | Nome |
 |---|---|
-| Log groups | `/aws/lambda/receber-avaliacao-dev`, `.../notificar-critica-dev`, `.../relatorio-semanal-dev` (retenção 7 dias no SAM) |
-| Alarmes Errors (≥ 1 em 5 min) | `receber-avaliacao-dev-errors`, `notificar-critica-dev-errors`, `relatorio-semanal-dev-errors` |
-| Dashboard | `feedback-aulas-dev-observabilidade` (Errors + Invocations + Duration × 3 Lambdas) |
+| Logs da API | Elastic Beanstalk envia o log da instância ao CloudWatch (retenção 7 dias, no `template.yaml`) |
+| Log groups das Lambdas | `/aws/lambda/notificar-critica-dev`, `/aws/lambda/relatorio-semanal-dev` (retenção 7 dias) |
+| Alarmes Errors (≥ 1 em 5 min) | `notificar-critica-dev-errors`, `relatorio-semanal-dev-errors` |
+| Dashboard | `feedback-aulas-dev-observabilidade` (Errors, Invocations e Duration das Lambdas) |
 
 ### Como validar no console
 
-1. Região **us-east-1** → CloudWatch → *Log groups* → filtrar `Avaliacao registrada` / `Alerta enviado`.
-2. CloudWatch → *Alarms* → os três `*-errors` acima.
-3. CloudWatch → *Dashboards* → `feedback-aulas-dev-observabilidade`.
+1. Região **us-east-1** → CloudWatch → *Log groups* da Lambda `notificar-critica-dev` → filtrar `Alerta enviado`.
+2. CloudWatch → log do ambiente `feedback-api-dev` → filtrar `Avaliação salva com sucesso`.
+3. CloudWatch → *Alarms* → os dois `*-errors` das Lambdas que ainda existem.
+4. CloudWatch → *Dashboards* → `feedback-aulas-dev-observabilidade`.
 
 ## US15 — Qualidade e documentação
 
 | Entrega | Evidência |
 |---|---|
-| Contrato entre serviços | Item DynamoDB: `id` (S), `descricao` (S), `nota` (N), `dataEnvio` (S ISO-8601). Criticidade: `nota <= LimiteNotaCritica` (padrão 4). Evento = DynamoDB Stream |
-| Testes de contrato | `ItemAvaliacaoDynamoTest` (receber); `ContratoEventoAvaliacaoTest` (notificar); testes unitários dos módulos; smoke test do CI (`201` / `400`) |
-| Documentação | Este arquivo + [`GUIA_INFRA.md`](GUIA_INFRA.md) + [`ROTEIRO_DEMONSTRACAO.md`](ROTEIRO_DEMONSTRACAO.md) + README |
-| Deploy | `mvn verify` / `sam deploy` documentados no README |
+| Contrato entre serviços | Item DynamoDB: `id` (S), `descricao` (S), `nota` (N), `dataEnvio` (S ISO-8601). Evento para o alerta = DynamoDB Stream |
+| Urgência | `<= 4` alta; `< 7` média; as duas disparam e-mail. `>= 7` não dispara |
+| Testes | `ContratoEventoAvaliacaoTest` (notificar); testes da `avaliacao-api`; smoke do CI (`201` / `400` em `POST /api/avaliacao/v1`) |
+| Documentação | Este arquivo + [`ROTEIRO_DEMONSTRACAO.md`](ROTEIRO_DEMONSTRACAO.md) + README |
 
 ```bash
 mvn -B verify
+mvn -B -f avaliacao-api/pom.xml verify
 ```
 
 ## Critérios FIAP (vídeo / README)
@@ -68,6 +72,6 @@ mvn -B verify
 | Critério | Onde mostrar |
 |---|---|
 | Modelo de cloud | Diagrama acima + stack `feedback-aulas-dev` |
-| Segurança | Roles das Lambdas + OIDC + usuários IAM |
-| Monitoramento | Log groups + 3 alarmes + dashboard |
+| Segurança | Role da instância, roles das Lambdas, OIDC e usuários IAM |
+| Monitoramento | Logs do Beanstalk e das Lambdas, alarmes e dashboard |
 | Qualidade / docs | Actions verde + este guia + roteiro de demo |
