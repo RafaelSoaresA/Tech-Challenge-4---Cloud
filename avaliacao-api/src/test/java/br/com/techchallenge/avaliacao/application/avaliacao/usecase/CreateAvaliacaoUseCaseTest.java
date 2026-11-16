@@ -60,7 +60,7 @@ class CreateAvaliacaoUseCaseTest {
         assertNotNull(output.getId());
         assertEquals(input.getDescricao(), output.getDescricao());
         assertEquals(input.getNota(), output.getNota());
-        assertNotNull(output.getData());
+        assertNotNull(output.getDataEnvio());
 
         verify(avaliacaoGateway, times(1))
                 .save(any(Avaliacao.class));
@@ -117,7 +117,7 @@ class CreateAvaliacaoUseCaseTest {
         assertEquals(idPersistido, output.getId());
         assertEquals("Atendimento satisfatório", output.getDescricao());
         assertEquals(8, output.getNota());
-        assertEquals(avaliacaoPersistida.getData(), output.getData());
+        assertEquals(avaliacaoPersistida.getData(), output.getDataEnvio());
 
         verify(avaliacaoGateway, times(1))
                 .save(any(Avaliacao.class));
