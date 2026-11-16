@@ -4,6 +4,7 @@ package br.com.techchallenge.avaliacao.application.avaliacao.usecase;
 import br.com.techchallenge.avaliacao.application.avaliacao.dto.AvaliacaoOutput;
 import br.com.techchallenge.avaliacao.application.avaliacao.dto.CreateAvaliacaoInput;
 import br.com.techchallenge.avaliacao.domain.avaliacao.entiy.Avaliacao;
+import br.com.techchallenge.avaliacao.domain.avaliacao.gateways.AvaliacaoEventPublisher;
 import br.com.techchallenge.avaliacao.domain.avaliacao.gateways.AvaliacaoGateway;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -26,6 +27,9 @@ class CreateAvaliacaoUseCaseTest {
 
     @Mock
     private AvaliacaoGateway avaliacaoGateway;
+
+    @Mock
+    private AvaliacaoEventPublisher eventPublisher;
 
     @InjectMocks
     private CreateAvaliacaoUseCase createAvaliacaoUseCase;
