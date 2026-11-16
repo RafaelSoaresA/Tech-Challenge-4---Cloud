@@ -5,23 +5,23 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbBean;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbPartitionKey;
 
 @DynamoDbBean
-public class AvaliacaoJpaEntity {
+public class AvaliacaoDynamoDbEntity {
 
     private String id;
     private String descricao;
     private Integer nota;
     private String data;
 
-    public AvaliacaoJpaEntity() {
+    public AvaliacaoDynamoDbEntity() {
     }
 
-    public AvaliacaoJpaEntity(String descricao, Integer nota, String data) {
+    public AvaliacaoDynamoDbEntity(String descricao, Integer nota, String data) {
         this.descricao = descricao;
         this.nota = nota;
         this.data = data;
     }
 
-    public AvaliacaoJpaEntity(String id, String descricao, Integer nota, String data) {
+    public AvaliacaoDynamoDbEntity(String id, String descricao, Integer nota, String data) {
         this.id = id;
         this.descricao = descricao;
         this.nota = nota;

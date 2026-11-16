@@ -52,7 +52,7 @@ class FindByIdAvaliacaoUseCaseTest {
         assertEquals(avaliacao.getId(), output.getId());
         assertEquals(avaliacao.getDescricao(), output.getDescricao());
         assertEquals(avaliacao.getNota(), output.getNota());
-        assertEquals(avaliacao.getData(), output.getData());
+        assertEquals(avaliacao.getData(), output.getDataEnvio());
 
         verify(avaliacaoGateway, times(1)).findById(id);
 

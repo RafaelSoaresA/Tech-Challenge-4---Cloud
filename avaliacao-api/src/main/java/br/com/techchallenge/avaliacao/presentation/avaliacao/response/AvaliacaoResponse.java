@@ -8,13 +8,13 @@ public class AvaliacaoResponse {
     private UUID id;
     private String descricao;
     private Integer nota;
-    private Instant data;
+    private Instant dataEnvio;
 
-    public AvaliacaoResponse(UUID id, String descricao, Integer nota, Instant data) {
+    public AvaliacaoResponse(UUID id, String descricao, Integer nota, Instant dataEnvio) {
         this.id = id;
         this.descricao = descricao;
         this.nota = nota;
-        this.data = data;
+        this.dataEnvio = dataEnvio;
     }
 
     public UUID getId() {
@@ -29,7 +29,7 @@ public class AvaliacaoResponse {
         return nota;
     }
 
-    public Instant getData() {
-        return data;
+    public Instant getDataEnvio() {
+        return dataEnvio;
     }
 }
