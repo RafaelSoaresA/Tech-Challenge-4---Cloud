@@ -114,12 +114,12 @@ class ListAvaliacaoUseCaseTest {
         assertEquals(avaliacao1.getId(), output.get(0).getId());
         assertEquals(avaliacao1.getDescricao(), output.get(0).getDescricao());
         assertEquals(avaliacao1.getNota(), output.get(0).getNota());
-        assertEquals(avaliacao1.getData(), output.get(0).getData());
+        assertEquals(avaliacao1.getData(), output.get(0).getDataEnvio());
 
         assertEquals(avaliacao2.getId(), output.get(1).getId());
         assertEquals(avaliacao2.getDescricao(), output.get(1).getDescricao());
         assertEquals(avaliacao2.getNota(), output.get(1).getNota());
-        assertEquals(avaliacao2.getData(), output.get(1).getData());
+        assertEquals(avaliacao2.getData(), output.get(1).getDataEnvio());
 
         verify(avaliacaoGateway, times(1)).findAll();
 
