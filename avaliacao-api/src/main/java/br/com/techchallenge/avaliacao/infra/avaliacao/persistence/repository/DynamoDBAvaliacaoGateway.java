@@ -4,7 +4,7 @@ package br.com.techchallenge.avaliacao.infra.avaliacao.persistence.repository;
 import br.com.techchallenge.avaliacao.domain.avaliacao.entiy.Avaliacao;
 import br.com.techchallenge.avaliacao.domain.avaliacao.gateways.AvaliacaoGateway;
 import br.com.techchallenge.avaliacao.infra.avaliacao.mapper.AvaliacaoPersistenceMapper;
-import br.com.techchallenge.avaliacao.infra.avaliacao.persistence.entitty.AvaliacaoJpaEntity;
+import br.com.techchallenge.avaliacao.infra.avaliacao.persistence.entitty.AvaliacaoDynamoDbEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Repository;
@@ -20,7 +20,7 @@ import java.util.UUID;
 @Repository
 public class DynamoDBAvaliacaoGateway implements AvaliacaoGateway {
 
-    private final DynamoDbTable<AvaliacaoJpaEntity> tabela;
+    private final DynamoDbTable<AvaliacaoDynamoDbEntity> tabela;
     private final AvaliacaoPersistenceMapper mapper;
 
     private static final Logger log =
@@ -32,7 +32,7 @@ public class DynamoDBAvaliacaoGateway implements AvaliacaoGateway {
 
         this.tabela = client.table(
                 "avaliacoes-dev",
-                TableSchema.fromBean(AvaliacaoJpaEntity.class)
+                TableSchema.fromBean(AvaliacaoDynamoDbEntity.class)
         );
 
         this.mapper = mapper;
@@ -44,7 +44,7 @@ public class DynamoDBAvaliacaoGateway implements AvaliacaoGateway {
         try {
             log.info("Iniciando persistência da avaliação: {}", avaliacao.getId());
 
-            AvaliacaoJpaEntity entity = mapper.toJpa(avaliacao);
+            AvaliacaoDynamoDbEntity entity = mapper.toJpa(avaliacao);
 
             log.info("Entidade convertida: id={}, descricao={}, nota={}",
                     entity.getId(),
@@ -65,7 +65,7 @@ public class DynamoDBAvaliacaoGateway implements AvaliacaoGateway {
 
     @Override
     public Optional<Avaliacao> findById(UUID id) {
-        AvaliacaoJpaEntity entity = tabela.getItem(
+        AvaliacaoDynamoDbEntity entity = tabela.getItem(
                 Key.builder()
                         .partitionValue(id.toString())
                         .build()
@@ -86,7 +86,7 @@ public class DynamoDBAvaliacaoGateway implements AvaliacaoGateway {
     @Override
     public boolean existsById(UUID id) {
 
-        AvaliacaoJpaEntity entity = tabela.getItem(
+        AvaliacaoDynamoDbEntity entity = tabela.getItem(
                 Key.builder()
                         .partitionValue(id.toString())
                         .build()

@@ -19,7 +19,7 @@ public class AvaliacaoPresentationMapper {
                 output.getId(),
                 output.getDescricao(),
                 output.getNota(),
-                output.getData()
+                output.getDataEnvio()
         );
     }
 

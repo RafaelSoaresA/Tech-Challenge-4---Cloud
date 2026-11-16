@@ -18,7 +18,7 @@ public class AvaliacaoApplicationMapper {
                 .id(avaliacao.getId())
                 .descricao(avaliacao.getDescricao())
                 .nota(avaliacao.getNota())
-                .data(avaliacao.getData())
+                .dataEnvio(avaliacao.getData())
                 .build();
     }
 

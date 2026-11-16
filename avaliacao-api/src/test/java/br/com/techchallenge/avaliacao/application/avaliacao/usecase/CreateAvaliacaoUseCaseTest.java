@@ -4,6 +4,7 @@ package br.com.techchallenge.avaliacao.application.avaliacao.usecase;
 import br.com.techchallenge.avaliacao.application.avaliacao.dto.AvaliacaoOutput;
 import br.com.techchallenge.avaliacao.application.avaliacao.dto.CreateAvaliacaoInput;
 import br.com.techchallenge.avaliacao.domain.avaliacao.entiy.Avaliacao;
+import br.com.techchallenge.avaliacao.domain.avaliacao.gateways.AvaliacaoEventPublisher;
 import br.com.techchallenge.avaliacao.domain.avaliacao.gateways.AvaliacaoGateway;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -26,6 +27,9 @@ class CreateAvaliacaoUseCaseTest {
 
     @Mock
     private AvaliacaoGateway avaliacaoGateway;
+
+    @Mock
+    private AvaliacaoEventPublisher eventPublisher;
 
     @InjectMocks
     private CreateAvaliacaoUseCase createAvaliacaoUseCase;
@@ -56,7 +60,7 @@ class CreateAvaliacaoUseCaseTest {
         assertNotNull(output.getId());
         assertEquals(input.getDescricao(), output.getDescricao());
         assertEquals(input.getNota(), output.getNota());
-        assertNotNull(output.getData());
+        assertNotNull(output.getDataEnvio());
 
         verify(avaliacaoGateway, times(1))
                 .save(any(Avaliacao.class));
@@ -113,7 +117,7 @@ class CreateAvaliacaoUseCaseTest {
         assertEquals(idPersistido, output.getId());
         assertEquals("Atendimento satisfatório", output.getDescricao());
         assertEquals(8, output.getNota());
-        assertEquals(avaliacaoPersistida.getData(), output.getData());
+        assertEquals(avaliacaoPersistida.getData(), output.getDataEnvio());
 
         verify(avaliacaoGateway, times(1))
                 .save(any(Avaliacao.class));

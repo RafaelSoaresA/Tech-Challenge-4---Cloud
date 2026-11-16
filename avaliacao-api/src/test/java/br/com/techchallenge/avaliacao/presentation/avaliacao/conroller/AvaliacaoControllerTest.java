@@ -64,7 +64,7 @@ class AvaliacaoControllerTest {
         when(output.getId()).thenReturn(id);
         when(output.getDescricao()).thenReturn("Excelente atendimento");
         when(output.getNota()).thenReturn(10);
-        when(output.getData()).thenReturn(data);
+        when(output.getDataEnvio()).thenReturn(data);
 
         return output;
     }
@@ -74,7 +74,7 @@ class AvaliacaoControllerTest {
     class CriarAvaliacao {
 
         @Test
-        @DisplayName("Deve criar avaliação e retornar HTTP 200")
+        @DisplayName("Deve criar avaliação e retornar HTTP 201")
         void deveCriarAvaliacaoComSucesso() {
             // Arrange
             AvaliacaoOutput output = criarOutput();
@@ -87,13 +87,13 @@ class AvaliacaoControllerTest {
                     controller.createAvaliacao(request);
 
             // Assert
-            assertEquals(HttpStatus.OK, resultado.getStatusCode());
+            assertEquals(HttpStatus.CREATED, resultado.getStatusCode());
             assertNotNull(resultado.getBody());
 
             assertEquals(id, resultado.getBody().getId());
             assertEquals("Excelente atendimento", resultado.getBody().getDescricao());
             assertEquals(10, resultado.getBody().getNota());
-            assertEquals(data, resultado.getBody().getData());
+            assertEquals(data, resultado.getBody().getDataEnvio());
 
             verify(createAvaliacaoUseCase).execute(any(CreateAvaliacaoInput.class));
         }
@@ -148,7 +148,7 @@ class AvaliacaoControllerTest {
             assertEquals(id, avaliacaoResponse.getId());
             assertEquals("Excelente atendimento", avaliacaoResponse.getDescricao());
             assertEquals(10, avaliacaoResponse.getNota());
-            assertEquals(data, avaliacaoResponse.getData());
+            assertEquals(data, avaliacaoResponse.getDataEnvio());
 
             verify(listAvaliacaoUseCase).execute();
         }
@@ -219,7 +219,7 @@ class AvaliacaoControllerTest {
             assertEquals(id, resultado.getBody().getId());
             assertEquals("Excelente atendimento", resultado.getBody().getDescricao());
             assertEquals(10, resultado.getBody().getNota());
-            assertEquals(data, resultado.getBody().getData());
+            assertEquals(data, resultado.getBody().getDataEnvio());
 
             verify(findByIdAvaliacaoUseCase).execute(id);
         }

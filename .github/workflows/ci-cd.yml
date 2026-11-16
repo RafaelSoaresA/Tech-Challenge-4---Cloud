@@ -25,8 +25,10 @@ jobs:
           distribution: temurin
           java-version: "21"
           cache: maven
-      - name: Compilar e rodar testes (gera target/function.zip de cada Lambda)
+      - name: Lambdas - compilar e testar (gera target/function.zip)
         run: mvn -B verify
+      - name: API de avaliação (Spring Boot) - compilar e testar
+        run: mvn -B -f avaliacao-api/pom.xml verify
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -69,6 +71,30 @@ jobs:
       - name: Empacotar as Lambdas (testes já rodaram no job anterior)
         run: mvn -B package -DskipTests
 
+      # ---- API Spring no Beanstalk: gera o pacote (jar + Procfile) e envia para o S3 ----
+      - name: Empacotar a avaliacao-api
+        run: |
+          mvn -B -f avaliacao-api/pom.xml package -DskipTests
+          mkdir -p eb-bundle
+          cp avaliacao-api/target/avaliacao-api-*.jar eb-bundle/app.jar   # (.jar.original não casa com o padrão)
+          echo 'web: java -XX:MaxRAMPercentage=70 -jar app.jar' > eb-bundle/Procfile
+          (cd eb-bundle && zip -qr ../avaliacao-api-bundle.zip .)
+
+      - name: Enviar pacote ao S3 e descobrir a plataforma do Beanstalk
+        run: |
+          # Bucket que o SAM já criou (stack aws-sam-cli-managed-default)
+          BUCKET=$(aws cloudformation describe-stacks --stack-name aws-sam-cli-managed-default \
+            --query "Stacks[0].Outputs[?OutputKey=='SourceBucket'].OutputValue" --output text)
+          KEY="avaliacao-api/${GITHUB_SHA}.zip"     # chave nova a cada commit = redeploy da API
+          aws s3 cp avaliacao-api-bundle.zip "s3://$BUCKET/$KEY"
+          # Plataforma Corretto 21 / Amazon Linux 2023 mais recente (a lista vem da mais nova para a mais antiga)
+          STACK=$(aws elasticbeanstalk list-available-solution-stacks \
+            --query "SolutionStacks[?contains(@, 'Amazon Linux 2023') && contains(@, 'Corretto 21') && !contains(@, 'Tomcat')] | [0]" --output text)
+          echo "Bundle: s3://$BUCKET/$KEY | Plataforma: $STACK"
+          echo "APP_BUCKET=$BUCKET"  >> "$GITHUB_ENV"
+          echo "APP_KEY=$KEY"        >> "$GITHUB_ENV"
+          echo "EB_STACK=$STACK"     >> "$GITHUB_ENV"
+
       # Não usa "sam build": o template já aponta para os function.zip gerados pelo Maven.
       - name: sam deploy
         run: |
@@ -80,23 +106,29 @@ jobs:
             --resolve-s3 \
             --no-confirm-changeset \
             --no-fail-on-empty-changeset \
-            --parameter-overrides "Stage=dev AdminEmail=${{ secrets.ADMIN_EMAIL }}"
+            --parameter-overrides \
+              "Stage=dev" \
+              "AdminEmail=${{ secrets.ADMIN_EMAIL }}" \
+              "AppBundleBucket=$APP_BUCKET" \
+              "AppBundleKey=$APP_KEY" \
+              "SolutionStackName=\"$EB_STACK\""   # aspas escapadas: o nome da plataforma tem espaços
 
       - name: Smoke test pós-deploy
         run: |
           API_URL=$(aws cloudformation describe-stacks --stack-name "$STACK_NAME" \
             --query "Stacks[0].Outputs[?OutputKey=='ApiUrl'].OutputValue" --output text)
-          echo "API: $API_URL"
+          BASE="$API_URL/api/avaliacao/v1"
+          echo "API: $BASE"
 
-          # Java tem cold start de alguns segundos na 1ª chamada: tempo maior + retentativa
-          STATUS=$(curl -s --max-time 40 --retry 2 --retry-all-errors -o resp.json -w "%{http_code}" \
-            -X POST "$API_URL/avaliacao" -H "Content-Type: application/json" \
+          # Spring leva alguns segundos para subir: retentativas generosas
+          STATUS=$(curl -s --max-time 30 --retry 6 --retry-delay 10 --retry-all-errors -o resp.json -w "%{http_code}" \
+            -X POST "$BASE" -H "Content-Type: application/json" \
             -d '{"descricao":"smoke test CI","nota":9}')
           cat resp.json; echo
           test "$STATUS" = "201" || { echo "Esperado 201, recebido $STATUS"; exit 1; }
 
-          STATUS=$(curl -s --max-time 40 -o /dev/null -w "%{http_code}" \
-            -X POST "$API_URL/avaliacao" -H "Content-Type: application/json" \
+          STATUS=$(curl -s --max-time 30 -o /dev/null -w "%{http_code}" \
+            -X POST "$BASE" -H "Content-Type: application/json" \
             -d '{"descricao":"x","nota":42}')
           test "$STATUS" = "400" || { echo "Validação falhou: esperado 400, recebido $STATUS"; exit 1; }
           echo "Smoke test OK"

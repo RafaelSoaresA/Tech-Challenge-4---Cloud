@@ -3,7 +3,7 @@ package br.com.techchallenge.avaliacao.infra.avaliacao.persistence.repository;
 
 import br.com.techchallenge.avaliacao.domain.avaliacao.entiy.Avaliacao;
 import br.com.techchallenge.avaliacao.infra.avaliacao.mapper.AvaliacaoPersistenceMapper;
-import br.com.techchallenge.avaliacao.infra.avaliacao.persistence.entitty.AvaliacaoJpaEntity;
+import br.com.techchallenge.avaliacao.infra.avaliacao.persistence.entitty.AvaliacaoDynamoDbEntity;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -37,16 +37,16 @@ class DynamoDBAvaliacaoGatewayTest {
     private AvaliacaoPersistenceMapper mapper;
 
     @Mock
-    private DynamoDbTable<AvaliacaoJpaEntity> tabela;
+    private DynamoDbTable<AvaliacaoDynamoDbEntity> tabela;
 
     @Mock
-    private AvaliacaoJpaEntity entity;
+    private AvaliacaoDynamoDbEntity entity;
 
     @Mock
-    private PageIterable<AvaliacaoJpaEntity> pageIterable;
+    private PageIterable<AvaliacaoDynamoDbEntity> pageIterable;
 
     @Mock
-    private SdkIterable<AvaliacaoJpaEntity> items;
+    private SdkIterable<AvaliacaoDynamoDbEntity> items;
 
     @InjectMocks
     private DynamoDBAvaliacaoGateway gateway;
@@ -56,7 +56,7 @@ class DynamoDBAvaliacaoGatewayTest {
     @BeforeEach
     void setUp() {
         when(client.table(
-                eq("avaliacao_jpa_entity"),
+                eq("avaliacoes-dev"),
                 any(TableSchema.class)
         )).thenReturn(tabela);
 
@@ -120,7 +120,7 @@ class DynamoDBAvaliacaoGatewayTest {
 
         verify(mapper).toJpa(avaliacao);
         verify(tabela).putItem(entity);
-        verify(mapper, never()).toDomain(any(AvaliacaoJpaEntity.class));
+        verify(mapper, never()).toDomain(any(AvaliacaoDynamoDbEntity.class));
     }
 
     @Test
@@ -171,7 +171,7 @@ class DynamoDBAvaliacaoGatewayTest {
         verify(tabela, times(1))
                 .getItem(any(software.amazon.awssdk.enhanced.dynamodb.Key.class));
 
-        verify(mapper, never()).toDomain(any(AvaliacaoJpaEntity.class));
+        verify(mapper, never()).toDomain(any(AvaliacaoDynamoDbEntity.class));
     }
 
     @Test
@@ -185,7 +185,7 @@ class DynamoDBAvaliacaoGatewayTest {
                 .nota(8)
                 .build();
 
-        AvaliacaoJpaEntity segundaEntity = mock(AvaliacaoJpaEntity.class);
+        AvaliacaoDynamoDbEntity segundaEntity = mock(AvaliacaoDynamoDbEntity.class);
 
         when(tabela.scan()).thenReturn(pageIterable);
         when(pageIterable.items()).thenReturn(items);
