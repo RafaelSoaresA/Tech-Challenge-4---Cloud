@@ -35,7 +35,7 @@ public class SnsPublicadorAlerta implements PublicadorAlerta {
     public SnsPublicadorAlerta(
             SnsClient snsClient,
             @ConfigProperty(name = "topico.alertas.arn", defaultValue = "") String topicoArn,
-            @ConfigProperty(name = "alerta.assunto", defaultValue = "[Feedback] Avaliacao critica") String assunto) {
+            @ConfigProperty(name = "alerta.assunto", defaultValue = "[Feedback] Avaliacao %s") String assunto) {
         this.snsClient = snsClient;
         this.topicoArn = topicoArn;
         this.assunto = assunto;
@@ -49,7 +49,7 @@ public class SnsPublicadorAlerta implements PublicadorAlerta {
 
         PublishRequest requisicao = PublishRequest.builder()
                 .topicArn(topicoArn)
-                .subject(assunto)
+                .subject(montarAssunto(urgencia))
                 .message(montarMensagem(avaliacao, urgencia, enviadoEm))
                 .messageAttributes(Map.of(
                         "urgencia", atributo(urgencia.name()),
@@ -57,6 +57,11 @@ public class SnsPublicadorAlerta implements PublicadorAlerta {
                 .build();
 
         snsClient.publish(requisicao);
+    }
+
+    /** "%s" no assunto configurado vira a urgência (ex.: "[Feedback] Avaliacao MEDIUM"). */
+    private String montarAssunto(Urgencia urgencia) {
+        return assunto == null ? "" : assunto.replace("%s", urgencia.name());
     }
 
     static String montarMensagem(AvaliacaoEvento avaliacao, Urgencia urgencia, Instant enviadoEm) {

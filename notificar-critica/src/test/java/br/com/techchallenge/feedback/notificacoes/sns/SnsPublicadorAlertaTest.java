@@ -23,7 +23,7 @@ class SnsPublicadorAlertaTest {
         SnsPublicadorAlerta publicador = new SnsPublicadorAlerta(
                 sns,
                 "arn:aws:sns:us-east-1:123456789012:alertas-dev",
-                "[Feedback] Avaliacao critica");
+                "[Feedback] Avaliacao %s");
 
         publicador.publicar(
                 new AvaliacaoEvento("a1", "Aula confusa", 2, "2026-11-09T12:00:00Z"),
@@ -35,12 +35,32 @@ class SnsPublicadorAlertaTest {
         PublishRequest requisicao = captor.getValue();
 
         assertEquals("arn:aws:sns:us-east-1:123456789012:alertas-dev", requisicao.topicArn());
+        assertEquals("[Feedback] Avaliacao HIGH", requisicao.subject());
         assertTrue(requisicao.message().contains("Aula confusa"));
         assertTrue(requisicao.message().contains("Urgência: HIGH"));
         assertTrue(requisicao.message().contains("Data da avaliação: 09/11/2026 09:00:00"));
         assertTrue(requisicao.message().contains("Data de envio do alerta: 09/11/2026 09:05:00"));
         assertEquals("HIGH", requisicao.messageAttributes().get("urgencia").stringValue());
         assertEquals("a1", requisicao.messageAttributes().get("avaliacaoId").stringValue());
+    }
+
+    @Test
+    void assuntoIndicaUrgenciaMedium() {
+        SnsClient sns = mock(SnsClient.class);
+        SnsPublicadorAlerta publicador = new SnsPublicadorAlerta(
+                sns,
+                "arn:aws:sns:us-east-1:123456789012:alertas-dev",
+                "[Feedback] Avaliacao %s");
+
+        publicador.publicar(
+                new AvaliacaoEvento("a2", "Aula confusa", 5, "2026-11-09T12:00:00Z"),
+                Urgencia.MEDIUM,
+                Instant.parse("2026-11-09T12:05:00Z"));
+
+        ArgumentCaptor<PublishRequest> captor = ArgumentCaptor.forClass(PublishRequest.class);
+        verify(sns).publish(captor.capture());
+        assertEquals("[Feedback] Avaliacao MEDIUM", captor.getValue().subject());
+        assertEquals("MEDIUM", captor.getValue().messageAttributes().get("urgencia").stringValue());
     }
 
     @Test
