@@ -13,8 +13,8 @@ services:
       AWS_ACCESS_KEY_ID: test
       AWS_SECRET_ACCESS_KEY: test
       PERSISTENCE: "1"
-      EVALUATIONS_TABLE: evaluations-local
-      REPORTS_BUCKET: weekly-reports-local
+      TABELA_AVALIACOES: evaluations-local
+      BUCKET_RELATORIOS: weekly-reports-local
       LOCALSTACK_AUTH_TOKEN: ${LOCALSTACK_AUTH_TOKEN}
     volumes:
       - localstack-data:/var/lib/localstack

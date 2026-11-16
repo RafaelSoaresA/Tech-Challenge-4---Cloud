@@ -3,20 +3,20 @@ set -euo pipefail
 
 rm -f /tmp/weekly-reports-ready
 
-if ! awslocal dynamodb describe-table --table-name "$EVALUATIONS_TABLE" >/dev/null 2>&1; then
+if ! awslocal dynamodb describe-table --table-name "$TABELA_AVALIACOES" >/dev/null 2>&1; then
     awslocal dynamodb create-table \
-        --table-name "$EVALUATIONS_TABLE" \
+        --table-name "$TABELA_AVALIACOES" \
         --attribute-definitions AttributeName=id,AttributeType=S \
         --key-schema AttributeName=id,KeyType=HASH \
         --billing-mode PAY_PER_REQUEST
 fi
-awslocal dynamodb wait table-exists --table-name "$EVALUATIONS_TABLE"
+awslocal dynamodb wait table-exists --table-name "$TABELA_AVALIACOES"
 
-if ! awslocal s3api head-bucket --bucket "$REPORTS_BUCKET" >/dev/null 2>&1; then
-    awslocal s3api create-bucket --bucket "$REPORTS_BUCKET" --region us-east-1
+if ! awslocal s3api head-bucket --bucket "$BUCKET_RELATORIOS" >/dev/null 2>&1; then
+    awslocal s3api create-bucket --bucket "$BUCKET_RELATORIOS" --region us-east-1
 fi
 awslocal s3api put-public-access-block \
-    --bucket "$REPORTS_BUCKET" \
+    --bucket "$BUCKET_RELATORIOS" \
     --public-access-block-configuration \
     'BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true'
 
@@ -26,4 +26,4 @@ awslocal dynamodb batch-write-item \
 bash /opt/weekly-reports/deploy-lambda.sh
 
 touch /tmp/weekly-reports-ready
-echo "Local resources ready: $EVALUATIONS_TABLE and $REPORTS_BUCKET"
+echo "Local resources ready: $TABELA_AVALIACOES and $BUCKET_RELATORIOS"
