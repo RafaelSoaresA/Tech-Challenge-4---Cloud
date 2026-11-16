@@ -2,13 +2,13 @@ name: CI/CD
 
 on:
   pull_request:
-    branches: [main]
+    branches: [main]      # PR: só compila e testa (não toca na AWS)
   push:
-    branches: [main]
-  workflow_dispatch: {}
+    branches: [main]      # merge na main: testa + deploy + smoke test
+  workflow_dispatch: {}   # botão "Run workflow" manual
 
 permissions:
-  id-token: write
+  id-token: write         # necessário para login na AWS via OIDC (sem chaves fixas)
   contents: read
 
 env:
@@ -39,7 +39,7 @@ jobs:
     needs: testes
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    concurrency: deploy-dev   
+    concurrency: deploy-dev   # evita dois deploys ao mesmo tempo
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -99,7 +99,7 @@ jobs:
               "AdminEmail=${{ secrets.ADMIN_EMAIL }}" \
               "AppBundleBucket=$APP_BUCKET" \
               "AppBundleKey=$APP_KEY" \
-              "SolutionStackName=$EB_STACK"
+              "SolutionStackName=\"$EB_STACK\""   # aspas escapadas: o nome da plataforma tem espaços
 
       - name: Smoke test pós-deploy
         run: |
